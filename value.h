@@ -84,4 +84,10 @@ class Value {
     }
 };
 
+#ifdef STD_STREAMS
+std::ostream &operator<<(std::ostream &s, Value &v) {
+    return s << v.toString();
+}
+#endif
+
 #endif
