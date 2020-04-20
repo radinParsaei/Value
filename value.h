@@ -139,6 +139,20 @@ class Value {
     char* getString() {
       return data.string;
     }
+
+    void toNum() {
+      if(!type) return;
+      type = 0;
+      this->data.number = BigNumber(data.string);
+      this->data.string = 0;
+    }
+
+    void toTxt() {
+      if(type) return;
+      type = 1;
+      this->data.string = this->data.number.toString();
+      this->data.number = 0;
+    }
 };
 
 #ifdef STD_STREAMS
