@@ -1,7 +1,24 @@
 #ifndef __VALUE__H__
 #define __VALUE__H__
 
+#ifdef USE_GMP_LIB
+#define NUMBER mpf_class
+#include <gmpxx.h>
+#include <string.h>
+#include <sstream>
+#include <iomanip>
+using namespace std;
+char* stringDuplicate(const char* data) {
+	char* tmp = (char*)malloc(strlen(data));
+	strcpy(tmp, data);
+	return tmp;
+}
+#define NUMBER_TO_STRING stringDuplicate(mpf_class_to_string(this->data.number).c_str());
+#else
 #include <BigNumber.h>
+#define NUMBER BigNumber
+#define NUMBER_TO_STRING data.number.toString()
+#endif
 
 #ifdef USE_UTILS
 namespace Utils {
@@ -73,12 +90,39 @@ namespace Utils {
 class Value {
 	bool type;
 	struct {
+#ifdef USE_GMP_LIB
+		mpf_class number;
+#else
 		BigNumber number;
+#endif
 		char* string;
 	} data;
+#ifdef USE_GMP_LIB
+	string mpf_class_to_string(mpf_class data) {
+		ostringstream s;
+		int scale = 0;
+		mpf_class tmp = data;
+		while (tmp.get_d() != tmp.get_si()) {
+			tmp /= 10;
+			scale++;
+		}
+	  s << fixed << setprecision(scale) << data;
+	  string str = s.str();
+	  int i = str.size();
+	  while(str[--i] == '0')str.pop_back();
+	  if(str[str.size() - 1] == '.')str.pop_back();
+		return str;
+	}
+#endif
 	public:
 		Value();
-		Value(BigNumber data){
+		Value(
+#ifdef USE_GMP_LIB
+			mpf_class
+#else
+			BigNumber
+#endif
+			data) {
 			type = 0;
 			this->data.number = data;
 			this->data.string = 0;
@@ -86,13 +130,13 @@ class Value {
 
 		Value(double data) {
 			type = 0;
-			this->data.number = BigNumber(data);
+			this->data.number = data;
 			this->data.string = 0;
 		}
 
 		Value(int data) {
 			type = 0;
-			this->data.number = BigNumber(data);
+			this->data.number = data;
 			this->data.string = 0;
 		}
 
@@ -109,7 +153,13 @@ class Value {
 				data /= 10;
 			}
 			res[24] = 0;
-			*this = BigNumber(res);
+			*this =
+#ifdef USE_GMP_LIB
+			mpf_class
+#else
+			BigNumber
+#endif
+			(res);
 		}
 
 		Value(const char* data) {
@@ -123,7 +173,13 @@ class Value {
 			this->data = other.data;
 			return *this;
 		}
-		Value& operator=(BigNumber other) {
+		Value& operator=(
+#ifdef USE_GMP_LIB
+			mpf_class
+#else
+			BigNumber
+#endif
+			other) {
 			type = 0;
 			this->data.number = other;
 			this->data.string = 0;
@@ -134,7 +190,7 @@ class Value {
 			if(type){
 				return data.string;
 			} else {
-				return data.number.toString();
+				return NUMBER_TO_STRING;
 			}
 		}
 
@@ -142,7 +198,12 @@ class Value {
 			return type;
 		}
 
-		BigNumber getNumber() {
+#ifdef USE_GMP_LIB
+		mpf_class
+#else
+		BigNumber
+#endif
+		getNumber() {
 			return data.number;
 		}
 
@@ -153,23 +214,35 @@ class Value {
 		void toNum() {
 			if(!type) return;
 			type = 0;
-			this->data.number = BigNumber(data.string);
+			this->data.number =
+#ifdef USE_GMP_LIB
+			mpf_class(data.string);
+#else
+			BigNumber(data.string);
+#endif
 			this->data.string = 0;
 		}
 
 		void toTxt() {
 			if(type) return;
 			type = 1;
-			this->data.string = this->data.number.toString();
+			this->data.string = NUMBER_TO_STRING;
 			this->data.number = 0;
 		}
 
 		long toLong() {
+#ifdef USE_GMP_LIB
+			return this->data.number.get_si();
+#else
 			return this->data.number.toLong();
+#endif
 		}
 
 		double toDouble() {
-			char* a = data.number.toString();
+#ifdef USE_GMP_LIB
+			return this->data.number.get_d();
+#else
+			char* a = NUMBER_TO_STRING;
 			int8_t c = 0;
 			int8_t pointLocation = 0;
 			long res = 0;
@@ -189,11 +262,11 @@ class Value {
 						tmp *= 10;
 					}
 					ret += (res % 10) / tmp;
-					std::cout << ret << ";" << tmp << std::endl;
 					res /= 10;
 				}
 			}
 			return ret + res;
+#endif
 		}
 };
 
