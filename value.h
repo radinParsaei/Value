@@ -163,6 +163,38 @@ class Value {
 			this->data.string = this->data.number.toString();
 			this->data.number = 0;
 		}
+
+		long toLong() {
+			return this->data.number.toLong();
+		}
+
+		double toDouble() {
+			char* a = data.number.toString();
+			int8_t c = 0;
+			int8_t pointLocation = 0;
+			long res = 0;
+			double ret = 0;
+			while (a[c] != 0) {
+				if (a[c] != '.') {
+					res = res * 10 + a[c] - 48;
+				} else {
+					pointLocation = c;
+				}
+				c++;
+			}
+			if (pointLocation) {
+				for (int8_t i = 1; i < (c - pointLocation); i++) {
+					float tmp = 1;
+					for (int8_t j = (c - pointLocation); j > i; j--) {
+						tmp *= 10;
+					}
+					ret += (res % 10) / tmp;
+					std::cout << ret << ";" << tmp << std::endl;
+					res /= 10;
+				}
+			}
+			return ret + res;
+		}
 };
 
 #ifdef STD_STREAMS
