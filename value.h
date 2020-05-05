@@ -23,8 +23,8 @@ char* stringDuplicate(const char* data) {
 #ifdef USE_UTILS
 namespace Utils {
 	char* reverse(char* data) {
-		int64_t len = strlen(data) - 1;
-		for (int64_t i = 0; i < len / 2 + 1; i++) {
+		uint32_t len = strlen(data) - 1;
+		for (uint32_t i = 0; i < len / 2 + 1; i++) {
 			char tmp = *(data + len - i);
 			*(data + len - i) = *(data + i);
 			*(data + i) = tmp;
@@ -74,7 +74,7 @@ namespace Utils {
 	}
 
 	bool isEQ(const char* a, const char* b) {
-		int64_t i = 0;
+		uint32_t i = 0;
 		while (a[i] != 0) {
 			if (b[i] == 0) {
 				return false;
@@ -83,6 +83,14 @@ namespace Utils {
 			i++;
 		}
 		return true;
+	}
+
+	char* substring(char* on, uint32_t len, uint32_t from = 0) {
+		char* sub = (char*)malloc(strlen(on) - len - from);
+		for (uint32_t i = 0; i < len; i++) {
+			sub[i] = *(on + from + i);
+		}
+		return sub;
 	}
 }
 #endif
@@ -115,7 +123,7 @@ class Value {
 	}
 #endif
 	public:
-		Value();
+		Value() { type = 0; }
 		Value(
 #ifdef USE_GMP_LIB
 			mpf_class
@@ -160,6 +168,26 @@ class Value {
 			BigNumber
 #endif
 			(res);
+		}
+
+		Value(long data) {
+#ifdef USE_GMP_LIB
+			this->data.number = mpf_class(data);
+#else
+			char res[25] = {'0', '0', '0', '0', '0', '0',
+												'0', '0', '0', '0', '0', '0',
+												'0', '0', '0', '0', '0', '0',
+												'0', '0', '0', '0', '0', '0'
+												, '0'};
+			if (data < 0) { res[0] = '-'; data = -data; }
+			uint8_t c = 0;
+			while(data != 0) {
+				res[23 - c++] = (data % 10) + '0';
+				data /= 10;
+			}
+			res[24] = 0;
+			*this = NUMBER(res);
+#endif
 		}
 
 		Value(const char* data) {
