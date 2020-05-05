@@ -230,7 +230,7 @@ class Value {
 			this->data.number = 0;
 		}
 
-		long toLong() {
+		long getLong() {
 #ifdef USE_GMP_LIB
 			return this->data.number.get_si();
 #else
@@ -238,7 +238,7 @@ class Value {
 #endif
 		}
 
-		double toDouble() {
+		double getDouble() {
 #ifdef USE_GMP_LIB
 			return this->data.number.get_d();
 #else
