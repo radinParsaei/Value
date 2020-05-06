@@ -30,6 +30,24 @@ inline char* stringDuplicate(const char* data) {
 
 #ifdef USE_UTILS
 namespace Utils {
+	inline int find(const char* data, const char* tofind) {
+		uint32_t c = 0;
+		uint32_t len = 0;
+		while (data[c] != 0) {
+			if (data[c] == tofind[len]) {
+				len++;
+				if (len == strlen(tofind)) {
+					return c - len + 1;
+				}
+			} else {
+				len = 0;
+			}
+			c++;
+		}
+		return -1;
+	}
+
+
 	inline char* stringDuplicate(const char* data) {
 		char* tmp = (char*)malloc(strlen(data));
 		strcpy(tmp, data);
