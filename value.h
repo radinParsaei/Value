@@ -1,6 +1,8 @@
 #ifndef __VALUE__H__
 #define __VALUE__H__
 
+#include <string.h>
+
 #ifdef USE_GMP_LIB
 #define NUMBER mpf_class
 #include <gmpxx.h>
@@ -8,12 +10,18 @@
 #include <sstream>
 #include <iomanip>
 using namespace std;
-char* stringDuplicate(const char* data) {
+#ifndef USE_UTILS
+inline char* stringDuplicate(const char* data) {
 	char* tmp = (char*)malloc(strlen(data));
 	strcpy(tmp, data);
 	return tmp;
 }
+#endif
+#ifdef USE_UTILS
+#define NUMBER_TO_STRING Utils::stringDuplicate(mpf_class_to_string(this->data.number).c_str());
+#else
 #define NUMBER_TO_STRING stringDuplicate(mpf_class_to_string(this->data.number).c_str());
+#endif
 #else
 #include <BigNumber.h>
 #define NUMBER BigNumber
@@ -22,7 +30,13 @@ char* stringDuplicate(const char* data) {
 
 #ifdef USE_UTILS
 namespace Utils {
-	char* reverse(char* data) {
+	inline char* stringDuplicate(const char* data) {
+		char* tmp = (char*)malloc(strlen(data));
+		strcpy(tmp, data);
+		return tmp;
+	}
+
+	inline char* reverse(char* data) {
 		uint32_t len = strlen(data) - 1;
 		for (uint32_t i = 0; i < len / 2 + 1; i++) {
 			char tmp = *(data + len - i);
@@ -32,7 +46,7 @@ namespace Utils {
 		return data;
 	}
 
-	const char* replace(const char *replaceOn, const char *from, const char *to) {
+	inline const char* replace(const char *replaceOn, const char *from, const char *to) {
 		char *result;
 		int i = 0, c = 0;
 		int tolen = strlen(to);
@@ -58,22 +72,29 @@ namespace Utils {
 		return result;
 	}
 
-	char* repeat(char* a, int c) {
-		char tmp[strlen(a)] = {};
-		strcpy(tmp, a);
+	inline char* repeat(char* a, int c) {
+#ifdef USE_UTILS
+		char* tmp = Utils::stringDuplicate(a);
+#else
+		char* tmp = stringDuplicate(a);
+#endif
 		for (c--; c > 0; c--) {
 			strcat(a, tmp);
 		}
 		return a;
 	}
 
-	char* append(char* a, char* b) {
-		char tmp[strlen(a)] = {};
+	inline char* append(char* a, char* b) {
+#ifdef USE_UTILS
+		char* tmp = Utils::stringDuplicate(a);
+#else
+		char* tmp = stringDuplicate(a);
+#endif
 		strcpy(tmp, a);
 		return strcat(tmp, b);
 	}
 
-	bool isEQ(const char* a, const char* b) {
+	inline bool isEQ(const char* a, const char* b) {
 		uint32_t i = 0;
 		while (a[i] != 0) {
 			if (b[i] == 0) {
@@ -85,7 +106,7 @@ namespace Utils {
 		return true;
 	}
 
-	char* substring(char* on, uint32_t len, uint32_t from = 0) {
+	inline char* substring(char* on, uint32_t len, uint32_t from = 0) {
 		char* sub = (char*)malloc(strlen(on) - len - from);
 		for (uint32_t i = 0; i < len; i++) {
 			sub[i] = *(on + from + i);
@@ -96,14 +117,14 @@ namespace Utils {
 #endif
 
 class Value {
-	bool type;
+	bool type = 0;
 	struct {
 #ifdef USE_GMP_LIB
-		mpf_class number;
+		mpf_class number = 0;
 #else
-		BigNumber number;
+		BigNumber number = 0;
 #endif
-		char* string;
+		char* string = 0;
 	} data;
 #ifdef USE_GMP_LIB
 	string mpf_class_to_string(mpf_class data) {
@@ -192,7 +213,21 @@ class Value {
 
 		Value(const char* data) {
 			type = 1;
-			this->data.string = strdup(data);
+#ifdef USE_UTILS
+			this->data.string = Utils::stringDuplicate(data);
+#else
+			this->data.string = stringDuplicate(data);
+#endif
+			this->data.number = 0;
+		}
+
+		Value& operator=(const char* data) {
+			type = 1;
+#ifdef USE_UTILS
+			this->data.string = Utils::stringDuplicate(data);
+#else
+			this->data.string = stringDuplicate(data);
+#endif
 			this->data.number = 0;
 		}
 
