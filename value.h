@@ -124,11 +124,12 @@ namespace Utils {
 		return true;
 	}
 
-	inline char* substring(char* on, uint32_t len, uint32_t from = 0) {
-		char* sub = (char*)malloc(strlen(on) - len - from);
+	inline char* substring(const char* on, uint32_t len, uint32_t from = 0) {
+		char* sub = (char*)malloc(len + 1);
 		for (uint32_t i = 0; i < len; i++) {
 			sub[i] = *(on + from + i);
 		}
+		sub[len] = 0;
 		return sub;
 	}
 }
@@ -247,6 +248,7 @@ class Value {
 			this->data.string = stringDuplicate(data);
 #endif
 			this->data.number = 0;
+			return *this;
 		}
 
 		Value& operator=(Value other) {
