@@ -55,7 +55,11 @@ namespace Utils {
 	}
 
 	inline const char* reverse(const char* in) {
-		char* data = strdup(data);
+#ifdef USE_UTILS
+			char* data = Utils::stringDuplicate(in);
+#else
+			char* data = stringDuplicate(in);
+#endif
 		uint32_t len = strlen(data) - 1;
 		for (uint32_t i = 0; i < len / 2 + 1; i++) {
 			char tmp = *(data + len - i);
