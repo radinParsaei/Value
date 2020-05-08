@@ -109,6 +109,7 @@ namespace Utils {
 		size_t len = alen * c + 1;
 		char* dup = new char[len];
 		for (size_t i = 0; i < c; i++) memcpy(dup + i * alen, a, alen);
+		dup[len - 1] = 0;
 		return dup;
 	}
 
@@ -365,3 +366,4 @@ std::ostream &operator<<(std::ostream &s, Value &v) {
 #endif
 
 #endif
+
