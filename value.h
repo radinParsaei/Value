@@ -11,11 +11,6 @@
 #include <iomanip>
 using namespace std;
 #ifndef USE_UTILS
-inline char* stringDuplicate(const char* data) {
-	char* tmp = (char*)malloc(strlen(data));
-	strcpy(tmp, data);
-	return tmp;
-}
 #endif
 #ifdef USE_UTILS
 #define NUMBER_TO_STRING Utils::stringDuplicate(mpf_class_to_string(this->data.number).c_str());
@@ -30,6 +25,12 @@ inline char* stringDuplicate(const char* data) {
 
 #ifdef USE_UTILS
 namespace Utils {
+	size_t stringLength(const char* str) {
+		size_t s = 0;
+		while (str[s++] != '\0');
+		return s;
+	}
+
 	inline int find(const char* data, const char* tofind) {
 		uint32_t c = 0;
 		uint32_t len = 0;
@@ -47,14 +48,14 @@ namespace Utils {
 		return -1;
 	}
 
-
 	inline char* stringDuplicate(const char* data) {
-		char* tmp = (char*)malloc(strlen(data));
-		strcpy(tmp, data);
-		return tmp;
+		size_t len = strlen(data) + 1;
+    void *dup = malloc(len);
+    return (char*)memcpy(dup, data, len);
 	}
 
-	inline char* reverse(char* data) {
+	inline const char* reverse(const char* in) {
+		char* data = strdup(data);
 		uint32_t len = strlen(data) - 1;
 		for (uint32_t i = 0; i < len / 2 + 1; i++) {
 			char tmp = *(data + len - i);
@@ -67,15 +68,15 @@ namespace Utils {
 	inline const char* replace(const char *replaceOn, const char *from, const char *to) {
 		char *result;
 		int i = 0, c = 0;
-		int tolen = strlen(to);
-		int fromlen = strlen(from);
+		int tolen = stringLength(to);
+		int fromlen = stringLength(from);
 		for (; replaceOn[i] != '\0'; i++) {
 			if (strstr(&replaceOn[i], from) == &replaceOn[i]) {
 				c++;
 				i += fromlen - 1;
 			}
 		}
-		result = (char*)malloc(i + c * (tolen - fromlen) + 1);
+		result = new char[i + c * (tolen - fromlen) + 1];
 		i = 0;
 		while (*replaceOn) {
 			if (strstr(replaceOn, from) == replaceOn) {
@@ -90,26 +91,25 @@ namespace Utils {
 		return result;
 	}
 
-	inline char* repeat(char* a, int c) {
-#ifdef USE_UTILS
-		char* tmp = Utils::stringDuplicate(a);
-#else
-		char* tmp = stringDuplicate(a);
-#endif
-		for (c--; c > 0; c--) {
-			strcat(a, tmp);
+	inline const char* append(const char* a, const char* b) {
+		size_t alen = strlen(a);
+		size_t len = alen + strlen(b) + 1;
+		char* dup = new char[len];
+		memcpy(dup, a, alen);
+		size_t tmp = 0;
+		while (alen < len) {
+			dup[alen] = *(b + tmp++);
+			alen++;
 		}
-		return a;
+		return dup;
 	}
 
-	inline char* append(char* a, char* b) {
-#ifdef USE_UTILS
-		char* tmp = Utils::stringDuplicate(a);
-#else
-		char* tmp = stringDuplicate(a);
-#endif
-		strcpy(tmp, a);
-		return strcat(tmp, b);
+	inline const char* repeat(const char* a, int c) {
+		size_t alen = strlen(a);
+		size_t len = alen * c + 1;
+		char* dup = new char[len];
+		for (size_t i = 0; i < c; i++) memcpy(dup + i * alen, a, alen);
+		return dup;
 	}
 
 	inline bool isEQ(const char* a, const char* b) {
@@ -136,6 +136,11 @@ namespace Utils {
 #endif
 
 class Value {
+	char* stringDuplicate(const char* data) {
+		size_t len = strlen(data) + 1;
+    char *dup = new char[len];
+    return (char*)memcpy(dup, data, len);
+	}
 	bool type = 0;
 	struct {
 #ifdef USE_GMP_LIB
