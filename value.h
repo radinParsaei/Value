@@ -25,15 +25,15 @@ using namespace std;
 
 #ifdef USE_UTILS
 namespace Utils {
-	size_t stringLength(const char* str) {
+	inline size_t stringLength(const char* str) {
 		size_t s = 0;
 		while (str[s++] != '\0');
 		return s;
 	}
 
 	inline int find(const char* data, const char* tofind) {
-		uint32_t c = 0;
-		uint32_t len = 0;
+		size_t c = 0;
+		size_t len = 0;
 		while (data[c] != 0) {
 			if (data[c] == tofind[len]) {
 				len++;
@@ -60,8 +60,8 @@ namespace Utils {
 #else
 			char* data = stringDuplicate(in);
 #endif
-		uint32_t len = strlen(data) - 1;
-		for (uint32_t i = 0; i < len / 2 + 1; i++) {
+		size_t len = strlen(data) - 1;
+		for (size_t i = 0; i < len / 2 + 1; i++) {
 			char tmp = *(data + len - i);
 			*(data + len - i) = *(data + i);
 			*(data + i) = tmp;
@@ -118,7 +118,7 @@ namespace Utils {
 	}
 
 	inline bool isEQ(const char* a, const char* b) {
-		uint32_t i = 0;
+		size_t i = 0;
 		while (a[i] != 0) {
 			if (b[i] == 0) {
 				return false;
@@ -129,9 +129,9 @@ namespace Utils {
 		return true;
 	}
 
-	inline char* substring(const char* on, uint32_t len, uint32_t from = 0) {
+	inline char* substring(const char* on, size_t len, size_t from = 0) {
 		char* sub = (char*)malloc(len + 1);
-		for (uint32_t i = 0; i < len; i++) {
+		for (size_t i = 0; i < len; i++) {
 			sub[i] = *(on + from + i);
 		}
 		sub[len] = 0;
