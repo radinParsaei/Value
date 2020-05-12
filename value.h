@@ -221,23 +221,7 @@ class Value {
 		}
 
 		Value(long data) {
-#ifdef USE_GMP_LIB
-			this->data.number = mpf_class(data);
-#else
-			char res[25] = {'0', '0', '0', '0', '0', '0',
-												'0', '0', '0', '0', '0', '0',
-												'0', '0', '0', '0', '0', '0',
-												'0', '0', '0', '0', '0', '0'
-												, '0'};
-			if (data < 0) { res[0] = '-'; data = -data; }
-			uint8_t c = 0;
-			while(data != 0) {
-				res[23 - c++] = (data % 10) + '0';
-				data /= 10;
-			}
-			res[24] = 0;
-			*this = NUMBER(res);
-#endif
+			this->data.number = NUMBER(data);
 		}
 
 		Value(const char* data) {
@@ -335,30 +319,7 @@ class Value {
 #ifdef USE_GMP_LIB
 			return this->data.number.get_d();
 #else
-			char* a = NUMBER_TO_STRING;
-			int8_t c = 0;
-			int8_t pointLocation = 0;
-			long res = 0;
-			double ret = 0;
-			while (a[c] != 0) {
-				if (a[c] != '.') {
-					res = res * 10 + a[c] - 48;
-				} else {
-					pointLocation = c;
-				}
-				c++;
-			}
-			if (pointLocation) {
-				for (int8_t i = 1; i < (c - pointLocation); i++) {
-					float tmp = 1;
-					for (int8_t j = (c - pointLocation); j > i; j--) {
-						tmp *= 10;
-					}
-					ret += (res % 10) / tmp;
-					res /= 10;
-				}
-			}
-			return ret + res;
+			return this->data.number.toDouble();
 #endif
 		}
 };
@@ -370,4 +331,3 @@ std::ostream &operator<<(std::ostream &s, Value &v) {
 #endif
 
 #endif
-
