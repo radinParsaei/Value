@@ -126,7 +126,7 @@ namespace Utils {
 			if (a[i] != b[i]) return false;
 			i++;
 		}
-		return true;
+		return a[i] == 0 && b[i] == 0;
 	}
 
 	inline char* substring(const char* on, size_t len, size_t from = 0) {
