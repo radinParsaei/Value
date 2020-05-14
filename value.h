@@ -50,11 +50,11 @@ namespace Utils {
 
 	inline char* stringDuplicate(const char* data) {
 		size_t len = strlen(data) + 1;
-    void *dup = malloc(len);
-    return (char*)memcpy(dup, data, len);
+		void *dup = malloc(len);
+		return (char*)memcpy(dup, data, len);
 	}
 
-	char* freeAndDuplicate(const char* data) {
+	inline char* freeAndDuplicate(const char* data) {
 		char* res = stringDuplicate(data);
 		delete[] data;
 		return res;
@@ -144,21 +144,21 @@ namespace Utils {
 		return sub;
 	}
 
-	const char* rtrim(const char* s) {
+	inline const char* rtrim(const char* s) {
 		size_t i = 0;
 		while (s[++i] == ' ' || s[i] == '\t' || s[i] == '\n');
 		s = substring(s, stringLength(s) - i, i);
 		return s;
 	}
 
-	const char* ltrim(const char* s) {
+	inline const char* ltrim(const char* s) {
 		size_t i = stringLength(s) - 1;
 		while (s[--i] == ' ' || s[i] == '\t' || s[i] == '\n');
 		s = substring(s, i + 1);
 		return s;
 	}
 
-	const char* trim(const char* s) {
+	inline const char* trim(const char* s) {
 		const char* a = rtrim(s);
 		void* pA = (void*)a;
 		a = ltrim(a);
