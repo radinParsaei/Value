@@ -54,6 +54,12 @@ namespace Utils {
     return (char*)memcpy(dup, data, len);
 	}
 
+	char* freeAndDuplicate(const char* data) {
+		char* res = stringDuplicate(data);
+		delete[] data;
+		return res;
+	}
+
 	inline const char* reverse(const char* in) {
 #ifdef USE_UTILS
 			char* data = Utils::stringDuplicate(in);
