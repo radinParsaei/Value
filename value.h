@@ -137,6 +137,28 @@ namespace Utils {
 		sub[len] = 0;
 		return sub;
 	}
+
+	const char* rtrim(const char* s) {
+		size_t i = 0;
+		while (s[++i] == ' ' || s[i] == '\t' || s[i] == '\n');
+		s = substring(s, stringLength(s) - i, i);
+		return s;
+	}
+
+	const char* ltrim(const char* s) {
+		size_t i = stringLength(s) - 1;
+		while (s[--i] == ' ' || s[i] == '\t' || s[i] == '\n');
+		s = substring(s, i + 1);
+		return s;
+	}
+
+	const char* trim(const char* s) {
+		const char* a = rtrim(s);
+		void* pA = (void*)a;
+		a = ltrim(a);
+		free(pA);
+		return a;
+	}
 }
 #endif
 
