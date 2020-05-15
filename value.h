@@ -60,7 +60,7 @@ namespace Utils {
 		return res;
 	}
 
-	inline const char* reverse(const char* in) {
+	inline char* reverse(const char* in) {
 #ifdef USE_UTILS
 			char* data = Utils::stringDuplicate(in);
 #else
@@ -75,8 +75,8 @@ namespace Utils {
 		return data;
 	}
 
-	inline const char* replace(const char *replaceOn, const char *from, const char *to) {
-		char *result;
+	inline char* replace(const char *replaceOn, const char *from, const char *to) {
+		char* result;
 		int i = 0, c = 0;
 		int tolen = stringLength(to);
 		int fromlen = stringLength(from);
@@ -101,7 +101,7 @@ namespace Utils {
 		return result;
 	}
 
-	inline const char* append(const char* a, const char* b) {
+	inline char* append(const char* a, const char* b) {
 		size_t alen = strlen(a);
 		size_t len = alen + strlen(b) + 1;
 		char* dup = new char[len];
@@ -114,7 +114,7 @@ namespace Utils {
 		return dup;
 	}
 
-	inline const char* repeat(const char* a, int c) {
+	inline char* repeat(const char* a, int c) {
 		size_t alen = strlen(a);
 		size_t len = alen * c + 1;
 		char* dup = new char[len];
@@ -144,23 +144,21 @@ namespace Utils {
 		return sub;
 	}
 
-	inline const char* rtrim(const char* s) {
+	inline char* rtrim(const char* s) {
 		size_t i = 0;
 		while (s[++i] == ' ' || s[i] == '\t' || s[i] == '\n');
-		s = substring(s, stringLength(s) - i, i);
-		return s;
+		return substring(s, stringLength(s) - i, i);
 	}
 
-	inline const char* ltrim(const char* s) {
+	inline char* ltrim(const char* s) {
 		size_t i = stringLength(s) - 1;
 		while (s[--i] == ' ' || s[i] == '\t' || s[i] == '\n');
-		s = substring(s, i + 1);
-		return s;
+		return substring(s, i + 1);
 	}
 
-	inline const char* trim(const char* s) {
-		const char* a = rtrim(s);
-		void* pA = (void*)a;
+	inline char* trim(const char* s) {
+		char* a = rtrim(s);
+		void* pA = a;
 		a = ltrim(a);
 		free(pA);
 		return a;
