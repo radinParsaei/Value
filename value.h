@@ -146,7 +146,7 @@ namespace Utils {
 
 	inline char* rtrim(const char* s) {
 		size_t i = 0;
-		while (s[++i] == ' ' || s[i] == '\t' || s[i] == '\n');
+		while (s[i] == ' ' || s[i] == '\t' || s[i] == '\n') i++;
 		return substring(s, stringLength(s) - i, i);
 	}
 
