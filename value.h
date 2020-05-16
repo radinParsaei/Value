@@ -163,6 +163,30 @@ namespace Utils {
 		free(pA);
 		return a;
 	}
+
+	inline char* toUpper(const char* in) {
+		char* s = stringDuplicate(in);
+		size_t size = 0;
+		while (s[size] != 0) {
+			if (s[size] > 'a' && s[size] < 'z') {
+				s[size] -= 32;
+			}
+			size++;
+		}
+		return s;
+	}
+
+	inline char* toLower(const char* in) {
+		char* s = stringDuplicate(in);
+		size_t size = 0;
+		while (s[size] != 0) {
+			if (s[size] > 'A' && s[size] < 'Z') {
+				s[size] += 32;
+			}
+			size++;
+		}
+		return s;
+	}
 }
 #endif
 
