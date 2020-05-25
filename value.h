@@ -313,6 +313,13 @@ class Value {
 			return *this;
 		}
 
+		Value& operator=(int i) {
+			type = 0;
+			this->data.number = i;
+			this->data.string = 0;
+			return *this;
+		}
+
 		char* toString() {
 			if(type){
 				return data.string;
