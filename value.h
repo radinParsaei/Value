@@ -217,8 +217,10 @@ class Value {
 	  s << fixed << setprecision(scale) << data;
 	  string str = s.str();
 	  int i = str.size();
-	  while(str[--i] == '0')str.pop_back();
-	  if(str[str.size() - 1] == '.')str.pop_back();
+	  if (scale) {
+			while(str[--i] == '0')str.pop_back();
+		  if(str[str.size() - 1] == '.')str.pop_back();
+		}
 		return str;
 	}
 #endif
@@ -393,3 +395,4 @@ std::ostream &operator<<(std::ostream &s, Value &v) {
 #endif
 
 #endif
+
