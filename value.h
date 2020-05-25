@@ -348,12 +348,17 @@ class Value {
 		void toNum() {
 			if(!type) return;
 			type = 0;
-			this->data.number =
 #ifdef USE_GMP_LIB
-			mpf_class(data.string);
-#else
-			BigNumber(data.string);
+			size_t i = 0;
+			for(; data.string[i] != 0; i++){
+				if(!isdigit(data.string[i])){
+					this->data.number = 0;
+					this->data.string = 0;
+					return ;
+				}
+			}
 #endif
+			this->data.number = NUMBER(data.string);
 			this->data.string = 0;
 		}
 
