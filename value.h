@@ -165,7 +165,7 @@ namespace Utils {
 	}
 
 	inline char* toUpper(const char* in) {
-		char* s = stringDuplicate(in);
+		char* s = (char*)(in);
 		size_t size = 0;
 		while (s[size] != 0) {
 			if (s[size] > 'a' && s[size] < 'z') {
@@ -177,7 +177,7 @@ namespace Utils {
 	}
 
 	inline char* toLower(const char* in) {
-		char* s = stringDuplicate(in);
+		char* s = (char*)(in);
 		size_t size = 0;
 		while (s[size] != 0) {
 			if (s[size] > 'A' && s[size] < 'Z') {
@@ -395,4 +395,3 @@ std::ostream &operator<<(std::ostream &s, Value &v) {
 #endif
 
 #endif
-
