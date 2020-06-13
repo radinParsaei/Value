@@ -27,7 +27,7 @@ using namespace std;
 namespace Utils {
 	inline size_t stringLength(const char* str) {
 		size_t s = 0;
-		while (str[s++] != '\0');
+		while (str[s] != '\0')s++;
 		return s;
 	}
 
