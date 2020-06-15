@@ -170,7 +170,7 @@ class Value {
 #ifdef USE_GMP_LIB
 			size_t i = 0;
 			for(; text[i] != 0; i++){
-				if(!isdigit(text[i])){
+				if(!isdigit(text[i]) && text[i] != '-' && text[i] != '.') {
 					this->number = 0;
 					this->text = "";
 					return *this;
