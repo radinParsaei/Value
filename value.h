@@ -445,7 +445,11 @@ class Value {
 		}
 
 		bool operator==(Value other) {
-			return type == other.type && type? text == other.text : number == other.number;
+			return strictEquals(other);
+		}
+
+		bool operator!=(Value other) {
+			return !strictEquals(other);
 		}
 
 		bool equals(Value other) {
