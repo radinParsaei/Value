@@ -443,6 +443,18 @@ class Value {
 			}
 			return Value(-1);
 		}
+
+		bool operator==(Value other) {
+			return type == other.type && type? text == other.text : number == other.number;
+		}
+
+		bool equals(Value other) {
+			return toString() == other.toString();
+		}
+
+		bool strictEquals(Value other) {
+			return type == other.type && type? text == other.text : number == other.number;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
