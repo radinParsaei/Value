@@ -48,6 +48,12 @@ class Value {
 			this->text = "";
 		}
 
+		Value(char c) {
+			type = 1;
+			text = c;
+			number = 0;
+		}
+
 		Value(double data) {
 			type = 0;
 			this->number = data;
@@ -418,6 +424,24 @@ class Value {
 			Value tmp = this;
 			tmp %= other;
 			return tmp;
+		}
+
+		Value operator[](Value i) {
+			Value tmp = this;
+			tmp.toTxt();
+			if (tmp.text.size() > i.getLong()) {
+				return Value(tmp.text[i.getLong()]);
+			}
+			return Value(-1);
+		}
+
+		Value operator[](int i) {
+			Value tmp = this;
+			tmp.toTxt();
+			if (tmp.text.size() > i) {
+				return Value(tmp.text[i]);
+			}
+			return Value(-1);
 		}
 };
 
