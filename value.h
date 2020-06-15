@@ -2,6 +2,7 @@
 #define __VALUE__H__
 
 #include <string.h>
+#include <sstream>
 
 #ifdef USE_GMP_LIB
 #define NUMBER mpf_class
@@ -261,6 +262,38 @@ class Value {
 		Value operator--() {
 			operator-=(1);
 			return this;
+		}
+
+		Value& operator*=(Value other) {
+			if ((type || other.type) == 0) {
+				number *= other.number;
+			} else if (type == 0 && other.type == 1) {
+		    std::ostringstream os;
+		    for(NUMBER i = 0; i < number; i++) os << other.text;
+		    text = os.str();
+				type = 1;
+				number = 0;
+			} else if (type == 1 && other.type == 0) {
+		    std::ostringstream os;
+		    for(NUMBER i = 0; i < other.number; i++) os << text;
+		    text = os.str();
+				type = 1;
+				number = 0;
+			} else {
+				toNum();
+				std::ostringstream os;
+		    for(NUMBER i = 0; i < number; i++) os << other.text;
+		    text = os.str();
+				type = 1;
+				number = 0;
+			}
+			return *this;
+		}
+
+		Value operator*(Value other) {
+			Value tmp = this;
+			tmp *= other;
+			return tmp;
 		}
 };
 
