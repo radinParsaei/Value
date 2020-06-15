@@ -186,7 +186,7 @@ class Value {
 		}
 
 		Value& operator+(Value other) {
-			if (type + other.type == 0) {
+			if ((type || other.type) == 0) {
 				number += other.number;
 			} else {
 				toTxt();
