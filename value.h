@@ -184,10 +184,24 @@ class Value {
 			return this->number.toDouble();
 #endif
 		}
+
+		Value& operator+(Value other) {
+			if (type + other.type == 0) {
+				number += other.number;
+			} else {
+				toTxt();
+				text += other.toString();
+			}
+			return *this;
+		}
 };
 
-std::ostream &operator<<(std::ostream &s, Value &v) {
-		return s << v.toString();
+std::ostream &operator<<(std::ostream &s, Value *v) {
+	return s << v->toString();
+}
+
+std::ostream &operator<<(std::ostream &s, Value v) {
+	return s << v.toString();
 }
 
 #endif
