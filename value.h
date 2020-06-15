@@ -210,6 +210,14 @@ class Value {
 			return text;
 		}
 
+		Value find(Value tofind) {
+			Value tmp = tofind;
+			tmp.toNum();
+			Value tmp2 = this;
+			tmp2.toTxt();
+			return NUMBER((long)tmp2.getString().find(tmp.getLong()));
+		}
+
 		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
