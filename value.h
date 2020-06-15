@@ -224,6 +224,17 @@ class Value {
 			tmp += other;
 			return tmp;
 		}
+
+		Value operator++(int) {
+			Value tmp = this;
+			operator+=(1);
+			return tmp;
+		}
+
+		Value operator++() {
+			operator+=(1);
+			return this;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
