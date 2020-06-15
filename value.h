@@ -91,6 +91,12 @@ class Value {
 			this->number = 0;
 		}
 
+		Value(Value* other) {
+			type = other->type;
+			this->text = other->text;
+			this->number = other->number;
+		}
+
 		Value& operator=(const char* data) {
 			type = 1;
 			this->text = data;
@@ -109,6 +115,12 @@ class Value {
 			type = other.type;
 			this->text = other.text;
 			this->number = other.number;
+			return *this;
+		}
+		Value& operator=(Value* other) {
+			type = other->type;
+			this->text = other->text;
+			this->number = other->number;
 			return *this;
 		}
 		Value& operator=(NUMBER n) {
@@ -197,7 +209,7 @@ class Value {
 			return text;
 		}
 
-		Value& operator+(Value other) {
+		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
 			} else {
@@ -205,6 +217,12 @@ class Value {
 				text += other.toString();
 			}
 			return *this;
+		}
+
+		Value operator+(Value other) {
+			Value tmp = this;
+			tmp += other;
+			return tmp;
 		}
 };
 
