@@ -164,8 +164,8 @@ class Value {
 			return text;
 		}
 
-		void toNum() {
-			if(!type) return;
+		Value& toNum() {
+			if(!type) return *this;
 			type = 0;
 #ifdef USE_GMP_LIB
 			size_t i = 0;
@@ -173,19 +173,21 @@ class Value {
 				if(!isdigit(text[i])){
 					this->number = 0;
 					this->text = "";
-					return ;
+					return *this;
 				}
 			}
 #endif
 			this->number = NUMBER(text.c_str());
 			this->text = "";
+			return *this;
 		}
 
-		void toTxt() {
-			if(type) return;
+		Value& toTxt() {
+			if(type) return *this;
 			type = 1;
 			this->text = NUMBER_TO_STRING;
 			this->number = 0;
+			return *this;
 		}
 
 		long getLong() {
