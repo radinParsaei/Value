@@ -463,11 +463,13 @@ class Value {
 		}
 
 		Value substring(Value other) {
-			return text.substr(other.getLong());
+			if (!type) toTxt();
+			return text = text.substr(other.getLong());
 		}
 
 		Value substring(Value v1, Value v2) {
-			return text.substr(v1.getLong(), v2.getLong() - v1.getLong());
+			if (!type) toTxt();
+			return text = text.substr(v1.getLong(), v2.getLong() - v1.getLong());
 		}
 
 		Value reverse() {
