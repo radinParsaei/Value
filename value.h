@@ -321,6 +321,32 @@ class Value {
 			tmp /= other;
 			return tmp;
 		}
+
+		Value& operator%=(Value other) {
+			if ((type || other.type) == 0) {
+#ifdef USE_GMP_LIB
+				number = number.get_si() % other.number.get_si();
+#else
+				number %= other.number;
+#endif
+			} else {
+				toNum();
+				Value tmp = other;
+				tmp.toNum();
+#ifdef USE_GMP_LIB
+				number = number.get_si() % tmp.number.get_si();
+#else
+				number %= tmp.number;
+#endif
+			}
+			return *this;
+		}
+
+		Value operator%(Value other) {
+			Value tmp = this;
+			tmp %= other;
+			return tmp;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
