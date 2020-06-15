@@ -235,6 +235,33 @@ class Value {
 			operator+=(1);
 			return this;
 		}
+
+		Value& operator-=(Value other) {
+			if ((type || other.type) == 0) {
+				number -= other.number;
+			} else {
+				toTxt();
+				replace(other.toString(), "");
+			}
+			return *this;
+		}
+
+		Value operator-(Value other) {
+			Value tmp = this;
+			tmp -= other;
+			return tmp;
+		}
+
+		Value operator--(int) {
+			Value tmp = this;
+			operator-=(1);
+			return tmp;
+		}
+
+		Value operator--() {
+			operator-=(1);
+			return this;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
