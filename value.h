@@ -467,6 +467,22 @@ class Value {
 		Value substring(Value v1, Value v2) {
 			return text.substr(v1.getLong(), v2.getLong() - v1.getLong());
 		}
+
+		Value reverse() {
+			if (!type) {
+				toTxt();
+			}
+			if (text == "") {
+				return *this;
+			}
+			size_t len = text.size() - 1;
+			for (size_t i = 0; i < (len / 2) + 1; i++) {
+				char tmp = text[len - i];
+				text[len - i] = text[i];
+				text[i] = tmp;
+			}
+			return *this;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
