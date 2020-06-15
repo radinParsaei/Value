@@ -459,6 +459,14 @@ class Value {
 		bool strictEquals(Value other) {
 			return type == other.type && type? text == other.text : number == other.number;
 		}
+
+		Value substring(Value other) {
+			return text.substr(other.getLong());
+		}
+
+		Value substring(Value v1, Value v2) {
+			return text.substr(v1.getLong(), v2.getLong() - v1.getLong());
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
