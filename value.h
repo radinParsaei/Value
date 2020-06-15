@@ -282,6 +282,14 @@ class Value {
 			return text[tmp.getLong()];
 		}
 
+		Value endsWith(Value data) {
+			return text.find(data.toString()) == text.size() - data.toString().size();
+		}
+
+		Value startsWith(Value data) {
+			return text.find(data.toString()) == 0;
+		}
+
 		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
