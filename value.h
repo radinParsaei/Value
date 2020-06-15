@@ -244,6 +244,38 @@ class Value {
 			return *this;
 		}
 
+		Value trimLeft() {
+			if (!type) {
+				toTxt();
+				return *this;
+			}
+			size_t i = 0;
+			while (text[i] == '\n' || text[i] == '\t' || text[i] == ' ') i++;
+			text = text.substr(i);
+			return *this;
+		}
+
+		Value trimRight() {
+			if (!type) {
+				toTxt();
+				return *this;
+			}
+			size_t i = text.size() - 1;
+			while (text[i] == '\n' || text[i] == '\t' || text[i] == ' ') i--;
+			text = text.substr(0, i + 1);
+			return *this;
+		}
+
+		Value trim() {
+			if (!type) {
+				toTxt();
+				return *this;
+			}
+			trimRight();
+			trimLeft();
+			return *this;
+		}
+
 		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
