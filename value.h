@@ -185,6 +185,18 @@ class Value {
 #endif
 		}
 
+		std::string replace(Value from, Value to) {
+			toTxt();
+			if(from.toString().empty())
+        return text;
+    	size_t c = 0;
+    	while((c = text.find(from.toString(), c)) != std::string::npos) {
+      	text.replace(c, from.toString().length(), to.toString());
+  			c += to.toString().length();
+    	}
+			return text;
+		}
+
 		Value& operator+(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
