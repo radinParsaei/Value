@@ -295,6 +295,24 @@ class Value {
 			tmp *= other;
 			return tmp;
 		}
+
+		Value& operator/=(Value other) {
+			if ((type || other.type) == 0) {
+				number /= other.number;
+			} else {
+				toNum();
+				Value tmp = other;
+				tmp.toNum();
+				number /= tmp.number;
+			}
+			return *this;
+		}
+
+		Value operator/(Value other) {
+			Value tmp = this;
+			tmp /= other;
+			return tmp;
+		}
 };
 
 std::ostream &operator<<(std::ostream &s, Value *v) {
