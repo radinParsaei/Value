@@ -276,6 +276,12 @@ class Value {
 			return *this;
 		}
 
+		Value codePointAt(Value l) {
+			Value tmp = l;
+			tmp.toNum();
+			return text[tmp.getLong()];
+		}
+
 		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
