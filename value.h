@@ -218,6 +218,32 @@ class Value {
 			return NUMBER((long)tmp2.getString().find(tmp.getLong()));
 		}
 
+		Value toUpper() {
+			if (!type) {
+				toTxt();
+				return *this;
+			}
+			for (size_t c = 0; c < text.size(); c++) {
+				if (text[c] > 96 && text[c] < 123) {
+					text[c] -= 32;
+				}
+			}
+			return *this;
+		}
+
+		Value toLower() {
+			if (!type) {
+				toTxt();
+				return *this;
+			}
+			for (size_t c = 0; c < text.size(); c++) {
+				if (text[c] < 91 && text[c] > 64) {
+					text[c] += 32;
+				}
+			}
+			return *this;
+		}
+
 		Value& operator+=(Value other) {
 			if ((type || other.type) == 0) {
 				number += other.number;
