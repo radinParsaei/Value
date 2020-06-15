@@ -198,7 +198,7 @@ class Value {
 #endif
 		}
 
-		std::string replace(Value from, Value to) {
+		Value replace(Value from, Value to) {
 			toTxt();
 			if(from.toString().empty())
         return text;
