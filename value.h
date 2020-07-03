@@ -497,4 +497,11 @@ inline std::ostream &operator<<(std::ostream &s, Value v) {
 	return s << v.toString();
 }
 
+inline std::istream& operator>>(std::istream &in, Value &val) {
+  std::string a;
+  in >> a;
+  val = a;
+  return in;
+}
+
 #endif
