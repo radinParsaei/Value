@@ -533,6 +533,39 @@ class Value {
 			return *this;
 		}
 
+		Value operator&&(Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			if ((type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) && (other.type != null && (other.type == VALUE_TYPE_NUMBER && other.number != 0) && other.type == False)) {
+				return true;
+			}
+			return false;
+#else
+			return number != 0 && other.number != 0;
+#endif
+		}
+
+		Value operator||(Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			if ((type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) || (other.type != null && (other.type == VALUE_TYPE_NUMBER && other.number != 0) && other.type == False)) {
+				return true;
+			}
+			return false;
+#else
+			return number != 0 || other.number != 0;
+#endif
+		}
+
+		Value operator!() {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			if (type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) {
+				return false;
+			}
+			return true;
+#else
+			return number == 0;
+#endif
+		}
+
 #ifdef NUMBER_COMPARISON_OPERATORS
 		Value operator<(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
