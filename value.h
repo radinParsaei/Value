@@ -1,6 +1,13 @@
 #ifndef __VALUE__H__
 #define __VALUE__H__
 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False };
+#else
+#define VALUE_TYPE_NUMBER 0
+#define VALUE_TYPE_TEXT 1
+#endif
+
 #include <string.h>
 #include <sstream>
 
@@ -18,7 +25,11 @@
 #endif
 
 class Value {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+	STATES type;
+#else
 	bool type;
+#endif
 	NUMBER number;
 	std::string text;
 #ifdef USE_GMP_LIB
@@ -41,27 +52,36 @@ class Value {
 	}
 #endif
 	public:
-		Value() { type = 0; }
+		Value() { type = VALUE_TYPE_NUMBER; }
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+		Value(STATES a) {
+			if (a == null || a == True || a == False) {
+				type = a;
+			} else {
+				*this = (int)a;
+			}
+		}
+#endif
 		Value(NUMBER data) {
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 			this->number = data;
 			this->text = "";
 		}
 
 		Value(char c) {
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			text = c;
 			number = 0;
 		}
 
 		Value(double data) {
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 			this->number = data;
 			this->text = "";
 		}
 
 		Value(int data) {
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 			this->number = data;
 			this->text = "";
 		}
@@ -87,13 +107,13 @@ class Value {
 		}
 
 		Value(const char* data) {
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
 		}
 
 		Value(std::string data) {
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
 		}
@@ -105,14 +125,14 @@ class Value {
 		}
 
 		Value& operator=(const char* data) {
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
 			return *this;
 		}
 
 		Value& operator=(std::string data) {
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
 			return *this;
@@ -131,25 +151,38 @@ class Value {
 			return *this;
 		}
 		Value& operator=(NUMBER n) {
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 			this->number = n;
 			this->text = "";
 			return *this;
 		}
 
 		Value& operator=(int i) {
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 			this->number = i;
 			this->text = "";
 			return *this;
 		}
 
 		std::string toString() {
-			if(type){
+			if(type == VALUE_TYPE_TEXT){
 				return text;
-			} else {
+			} else
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			if (type == VALUE_TYPE_NUMBER)
+#endif
+			 {
 				return NUMBER_TO_STRING;
 			}
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			else if (type == null) {
+				return "null";
+			} else if (type == True) {
+				return "True";
+			} else {
+				return "False";
+			}
+#endif
 		}
 
 		bool getType() {
@@ -166,7 +199,7 @@ class Value {
 
 		Value& toNum() {
 			if(!type) return *this;
-			type = 0;
+			type = VALUE_TYPE_NUMBER;
 #ifdef USE_GMP_LIB
 			size_t i = 0;
 			for(; text[i] != 0; i++){
@@ -184,7 +217,7 @@ class Value {
 
 		Value& toTxt() {
 			if(type) return *this;
-			type = 1;
+			type = VALUE_TYPE_TEXT;
 			this->text = NUMBER_TO_STRING;
 			this->number = 0;
 			return *this;
@@ -355,24 +388,24 @@ class Value {
 		Value& operator*=(Value other) {
 			if ((type || other.type) == 0) {
 				number *= other.number;
-			} else if (type == 0 && other.type == 1) {
+			} else if (type == VALUE_TYPE_NUMBER && other.type == VALUE_TYPE_TEXT) {
 		    std::ostringstream os;
 		    for(NUMBER i = 0; i < number; i++) os << other.text;
 		    text = os.str();
-				type = 1;
+				type = VALUE_TYPE_TEXT;
 				number = 0;
-			} else if (type == 1 && other.type == 0) {
+			} else if (type == VALUE_TYPE_TEXT && other.type == VALUE_TYPE_NUMBER) {
 		    std::ostringstream os;
 		    for(NUMBER i = 0; i < other.number; i++) os << text;
 		    text = os.str();
-				type = 1;
+				type = VALUE_TYPE_TEXT;
 				number = 0;
 			} else {
 				toNum();
 				std::ostringstream os;
 		    for(NUMBER i = 0; i < number; i++) os << other.text;
 		    text = os.str();
-				type = 1;
+				type = VALUE_TYPE_TEXT;
 				number = 0;
 			}
 			return *this;
