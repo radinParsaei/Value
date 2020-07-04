@@ -61,6 +61,9 @@ class Value {
 				*this = (int)a;
 			}
 		}
+		Value(bool a) {
+			type = a? True:False;
+		}
 #endif
 		Value(NUMBER data) {
 			type = VALUE_TYPE_NUMBER;
