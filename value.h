@@ -523,6 +523,21 @@ class Value {
 			}
 			return *this;
 		}
+
+#ifdef NUMBER_COMPARISON_OPERATORS
+		Value operator<(Value other) {
+			return number < other.number;
+		}
+		Value operator>(Value other) {
+			return number > other.number;
+		}
+		Value operator<=(Value other) {
+			return number <= other.number;
+		}
+		Value operator>=(Value other) {
+			return number >= other.number;
+		}
+#endif
 };
 
 inline std::ostream &operator<<(std::ostream &s, Value *v) {
