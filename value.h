@@ -535,10 +535,7 @@ class Value {
 
 		Value operator&&(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			if ((type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) && (other.type != null && (other.type == VALUE_TYPE_NUMBER && other.number != 0) && other.type == False)) {
-				return true;
-			}
-			return false;
+			return getBool() && other.getBool();
 #else
 			return number != 0 && other.number != 0;
 #endif
@@ -546,10 +543,7 @@ class Value {
 
 		Value operator||(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			if ((type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) || (other.type != null && (other.type == VALUE_TYPE_NUMBER && other.number != 0) && other.type == False)) {
-				return true;
-			}
-			return false;
+			return getBool() || other.getBool();
 #else
 			return number != 0 || other.number != 0;
 #endif
