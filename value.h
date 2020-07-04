@@ -52,8 +52,8 @@ class Value {
 	}
 #endif
 	public:
-		Value() { type = VALUE_TYPE_NUMBER; }
 #ifdef VALUE_MULTI_TYPE_SUPPORT
+		Value() { type = null; }
 		Value(STATES a) {
 			if (a == null || a == True || a == False) {
 				type = a;
@@ -64,6 +64,15 @@ class Value {
 		Value(bool a) {
 			type = a? True:False;
 		}
+		bool getBool() {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			return type == True? true:false;
+#else
+			return number != 0? true:false;
+#endif
+		}
+#else
+		Value() { type = VALUE_TYPE_NUMBER; }
 #endif
 		Value(NUMBER data) {
 			type = VALUE_TYPE_NUMBER;
@@ -495,7 +504,7 @@ class Value {
 		}
 
 		bool strictEquals(Value other) {
-			return type == other.type && type? text == other.text : number == other.number;
+			return type == other.type && equals(other);
 		}
 
 		Value substring(Value other) {
@@ -526,15 +535,19 @@ class Value {
 
 #ifdef NUMBER_COMPARISON_OPERATORS
 		Value operator<(Value other) {
+			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number < other.number;
 		}
 		Value operator>(Value other) {
+			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number > other.number;
 		}
 		Value operator<=(Value other) {
+			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number <= other.number;
 		}
 		Value operator>=(Value other) {
+			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number >= other.number;
 		}
 #endif
