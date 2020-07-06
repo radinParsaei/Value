@@ -209,9 +209,35 @@ class Value {
 			return text;
 		}
 
+		Value canNum() {
+			if (type == VALUE_TYPE_NUMBER) {
+				return true;
+			}
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			else if (type == True || type == False || type == null) {
+				return true;
+			}
+#endif
+			else {
+				for (char c : text) {
+					if (!isdigit(c)) return false;
+				}
+				return true;
+			}
+		}
+
 		Value& toNum() {
-			if(!type) return *this;
+			if(type == VALUE_TYPE_NUMBER) return *this;
 			type = VALUE_TYPE_NUMBER;
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+			if (type == False || type == null) {
+				number = 0;
+				return *this;
+			} else if (type == True) {
+				number = 1;
+				return *this;
+			}
+#endif
 #ifdef USE_GMP_LIB
 			size_t i = 0;
 			for(; text[i] != 0; i++){
@@ -272,7 +298,7 @@ class Value {
 		}
 
 		Value toUpper() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 				return *this;
 			}
@@ -285,7 +311,7 @@ class Value {
 		}
 
 		Value toLower() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 				return *this;
 			}
@@ -298,7 +324,7 @@ class Value {
 		}
 
 		Value trimLeft() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 				return *this;
 			}
@@ -309,7 +335,7 @@ class Value {
 		}
 
 		Value trimRight() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 				return *this;
 			}
@@ -320,7 +346,7 @@ class Value {
 		}
 
 		Value trim() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 				return *this;
 			}
@@ -508,17 +534,17 @@ class Value {
 		}
 
 		Value substring(Value other) {
-			if (!type) toTxt();
+			if (type == VALUE_TYPE_NUMBER) toTxt();
 			return text = text.substr(other.getLong());
 		}
 
 		Value substring(Value v1, Value v2) {
-			if (!type) toTxt();
+			if (type == VALUE_TYPE_NUMBER) toTxt();
 			return text = text.substr(v1.getLong(), v2.getLong() - v1.getLong());
 		}
 
 		Value reverse() {
-			if (!type) {
+			if (type == VALUE_TYPE_NUMBER) {
 				toTxt();
 			}
 			if (text == "") {
