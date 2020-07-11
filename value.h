@@ -592,6 +592,22 @@ class Value {
 			return ~tmp.getLong();
 		}
 
+		Value operator&(Value other) {
+			Value tmp = this;
+			tmp.toNum();
+			Value tmp2 = other;
+			tmp2.toNum();
+			return tmp.getLong() & tmp2.getLong();
+		}
+
+		Value operator|(Value other) {
+			Value tmp = this;
+			tmp.toNum();
+			Value tmp2 = other;
+			tmp2.toNum();
+			return tmp.getLong() | tmp2.getLong();
+		}
+
 #ifdef NUMBER_COMPARISON_OPERATORS
 		Value operator<(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
