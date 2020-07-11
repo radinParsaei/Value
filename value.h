@@ -608,6 +608,14 @@ class Value {
 			return tmp.getLong() | tmp2.getLong();
 		}
 
+		Value operator^(Value other) {
+			Value tmp = this;
+			tmp.toNum();
+			Value tmp2 = other;
+			tmp2.toNum();
+			return tmp.getLong() ^ tmp2.getLong();
+		}
+
 		Value operator<<(Value other) {
 			Value tmp = this;
 			tmp.toNum();
