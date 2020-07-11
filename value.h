@@ -616,6 +616,16 @@ class Value {
 			return tmp.getLong() ^ tmp2.getLong();
 		}
 
+		Value operator-() {
+			Value tmp = this;
+			tmp.toNum();
+#ifdef USE_GMP_LIB
+			return mpf_class(NUMBER(-1) * tmp.getNumber());
+#else
+			return NUMBER(-1) * tmp.getNumber();
+#endif
+		}
+
 		Value operator<<(Value other) {
 			Value tmp = this;
 			tmp.toNum();
