@@ -608,6 +608,30 @@ class Value {
 			return tmp.getLong() | tmp2.getLong();
 		}
 
+		Value operator<<(Value other) {
+			Value tmp = this;
+			tmp.toNum();
+			Value tmp2 = other;
+			tmp2.toNum();
+#ifdef USE_GMP_LIB
+			return tmp.getLong() << tmp2.getLong();
+#else
+			return tmp.getNumber() << tmp2.getNumber();
+#endif
+		}
+
+		Value operator>>(Value other) {
+			Value tmp = this;
+			tmp.toNum();
+			Value tmp2 = other;
+			tmp2.toNum();
+#ifdef USE_GMP_LIB
+			return tmp.getLong() >> tmp2.getLong();
+#else
+			return tmp.getNumber() >> tmp2.getNumber();
+#endif
+		}
+
 #ifdef NUMBER_COMPARISON_OPERATORS
 		Value operator<(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
