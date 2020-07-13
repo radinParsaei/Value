@@ -228,16 +228,18 @@ class Value {
 
 		Value& toNum() {
 			if(type == VALUE_TYPE_NUMBER) return *this;
-			type = VALUE_TYPE_NUMBER;
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == False || type == null) {
+				type = VALUE_TYPE_NUMBER;
 				number = 0;
 				return *this;
 			} else if (type == True) {
+				type = VALUE_TYPE_NUMBER;
 				number = 1;
 				return *this;
 			}
 #endif
+			type = VALUE_TYPE_NUMBER;
 #ifdef USE_GMP_LIB
 			size_t i = 0;
 			for(; text[i] != 0; i++){
