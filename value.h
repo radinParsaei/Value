@@ -595,7 +595,7 @@ class Value {
 		Value operator~() {
 			Value tmp = this;
 			tmp.toNum();
-			return ~tmp.getLong();
+			return (int)~tmp.getLong();
 		}
 
 		Value operator&(Value other) {
