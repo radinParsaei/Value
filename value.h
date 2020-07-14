@@ -197,7 +197,12 @@ class Value {
 #endif
 		}
 
-		bool getType() {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+		STATES
+#else
+		bool
+#endif
+		getType() {
 			return type;
 		}
 
