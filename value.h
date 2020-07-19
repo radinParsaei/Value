@@ -588,7 +588,7 @@ class Value {
 
 		Value operator!() {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			if (type != null && (type == VALUE_TYPE_NUMBER && number != 0) && type == False) {
+			if (type != null && (type == VALUE_TYPE_NUMBER && number != 0) || type == True) {
 				return false;
 			}
 			return true;
