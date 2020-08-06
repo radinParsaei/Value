@@ -628,7 +628,9 @@ class Value {
 			tmp.toNum();
 			Value tmp2 = other;
 			tmp2.toNum();
-			return tmp.getLong() ^ tmp2.getLong();
+			if ((getType() == True || getType() == False) && (other.getType() == False || other.getType() == True))
+				return (bool)(tmp.getLong() ^ tmp2.getLong());
+			return (int)(tmp.getLong() ^ tmp2.getLong());
 		}
 
 		Value operator-() {
