@@ -115,6 +115,8 @@ class Value {
 		}
 
 		Value(long data) {
+			type = VALUE_TYPE_NUMBER;
+                        this->text = "";
 			this->number = NUMBER(data);
 		}
 
