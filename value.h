@@ -270,6 +270,18 @@ class Value {
 			return *this;
 		}
 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+		Value& toBool() {
+			if(type == True || type == False) return *this;
+			toNum();
+			if (this->number == 0) this->type = False;
+			else this->type = True;
+			this->text = "";
+			this->number = 0;
+			return *this;
+		}
+#endif
+
 		long getLong() {
 #ifdef USE_GMP_LIB
 			return this->number.get_si();
@@ -574,7 +586,11 @@ class Value {
 
 		Value operator&&(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			return getBool() && other.getBool();
+			Value tmp = this;
+			Value tmpOther = other;
+			tmp.toBool();
+			tmpOther.toBool();
+			return tmp.getBool() && tmpOther.getBool();
 #else
 			return number != 0 && other.number != 0;
 #endif
