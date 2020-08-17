@@ -626,8 +626,10 @@ class Value {
 			tmp.toNum();
 			Value tmp2 = other;
 			tmp2.toNum();
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if ((getType() == True || getType() == False) && (other.getType() == False || other.getType() == True))
 				return (bool)(tmp.getLong() & tmp2.getLong());
+#endif
 			return (int)(tmp.getLong() & tmp2.getLong());
 		}
 
@@ -636,8 +638,10 @@ class Value {
 			tmp.toNum();
 			Value tmp2 = other;
 			tmp2.toNum();
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if ((getType() == True || getType() == False) && (other.getType() == False || other.getType() == True))
 				return (bool)(tmp.getLong() | tmp2.getLong());
+#endif
 			return (int)(tmp.getLong() | tmp2.getLong());
 		}
 
@@ -646,8 +650,10 @@ class Value {
 			tmp.toNum();
 			Value tmp2 = other;
 			tmp2.toNum();
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if ((getType() == True || getType() == False) && (other.getType() == False || other.getType() == True))
 				return (bool)(tmp.getLong() ^ tmp2.getLong());
+#endif
 			return (int)(tmp.getLong() ^ tmp2.getLong());
 		}
 
