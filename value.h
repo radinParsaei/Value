@@ -145,6 +145,19 @@ class Value {
 			return *this;
 		}
 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+		Value& operator=(STATES a) {
+			if (a == null || a == True || a == False) {
+				type = a;
+			} else {
+				*this = (int)a;
+			}
+			this->text = "";
+			this->number = 0;
+			return *this;
+		}
+#endif
+
 		Value& operator=(std::string data) {
 			type = VALUE_TYPE_TEXT;
 			this->text = data;
