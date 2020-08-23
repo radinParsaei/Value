@@ -35,19 +35,11 @@ class Value {
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
 		std::ostringstream s;
-		int scale = 0;
-		mpf_class tmp = data;
-		while (tmp.get_d() != tmp.get_si()) {
-			tmp /= 10;
-			scale++;
-		}
-	  s << std::fixed << std::setprecision(scale) << data;
+	  s << std::setprecision(500) << data;
 	  std::string str = s.str();
 	  int i = str.size();
-	  if (scale) {
-			while(str[--i] == '0')str.pop_back();
-		  if(str[str.size() - 1] == '.')str.pop_back();
-		}
+		while(str[--i] == '0')str.pop_back();
+		if(str[str.size() - 1] == '.')str.pop_back();
 		return str;
 	}
 #endif
