@@ -34,13 +34,10 @@ class Value {
 	std::string text;
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
-		std::ostringstream s;
+          std::ostringstream s;
 	  s << std::setprecision(500) << data;
 	  std::string str = s.str();
-	  int i = str.size();
-		while(str[--i] == '0')str.pop_back();
-		if(str[str.size() - 1] == '.')str.pop_back();
-		return str;
+          return str;
 	}
 #endif
 	public:
