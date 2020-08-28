@@ -265,10 +265,8 @@ class Value {
 		}
 
 		Value& toTxt() {
-			if(type) return *this;
-			type = VALUE_TYPE_TEXT;
-			this->text = NUMBER_TO_STRING;
-			this->number = 0;
+			if(type == VALUE_TYPE_TEXT) return *this;
+			*this = toString();
 			return *this;
 		}
 
