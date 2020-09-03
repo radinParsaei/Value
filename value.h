@@ -692,19 +692,19 @@ class Value {
 		}
 
 #ifdef NUMBER_COMPARISON_OPERATORS
-		Value operator<(Value other) {
+		bool operator<(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number < other.number;
 		}
-		Value operator>(Value other) {
+		bool operator>(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number > other.number;
 		}
-		Value operator<=(Value other) {
+		bool operator<=(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number <= other.number;
 		}
-		Value operator>=(Value other) {
+		bool operator>=(Value other) {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number >= other.number;
 		}
