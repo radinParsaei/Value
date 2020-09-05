@@ -218,7 +218,7 @@ class Value {
 			return text;
 		}
 
-		Value canNum() {
+		bool canNum() {
 			if (type == VALUE_TYPE_NUMBER) {
 				return true;
 			}
@@ -311,11 +311,11 @@ class Value {
 		}
 
 		Value find(Value tofind) {
-			Value tmp = tofind;
-			tmp.toNum();
+			// Value tmp = tofind;
+			// tmp.toNum();
 			Value tmp2 = this;
 			tmp2.toTxt();
-			return NUMBER((long)tmp2.getString().find(tmp.getLong()));
+			return NUMBER((long)tmp2.getString().find(tofind.getString()));
 		}
 
 		Value toUpper() {
@@ -379,14 +379,14 @@ class Value {
 		Value codePointAt(Value l) {
 			Value tmp = l;
 			tmp.toNum();
-			return text[tmp.getLong()];
+			return (int)text[tmp.getLong()];
 		}
 
-		Value endsWith(Value data) {
+		bool endsWith(Value data) {
 			return text.find(data.toString()) == text.size() - data.toString().size();
 		}
 
-		Value startsWith(Value data) {
+		bool startsWith(Value data) {
 			return text.find(data.toString()) == 0;
 		}
 
