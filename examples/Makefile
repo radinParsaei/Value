@@ -1,5 +1,5 @@
 CXXFLAGS=-I..
-EXAMPLES=e1 e2 e3 e4
+EXAMPLES=e1 e2 e3 e4 e5
 all: $(EXAMPLES)
 ifeq ($(USE_GMP_LIB),1)
 %: %.cpp ../value.h
