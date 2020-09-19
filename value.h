@@ -548,7 +548,7 @@ class Value {
 
 		bool equals(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			return toString() == other.toString() || (type == VALUE_TYPE_NUMBER && (other.getBool() == this->number)) || ((type == True || type == False) && (getBool() == other.number));
+			return toString() == other.toString() || (type == VALUE_TYPE_NUMBER && (other.type == True || other.type == False) && (other.getBool() == this->number)) || ((type == True || type == False) && other.type == VALUE_TYPE_NUMBER && (getBool() == other.number));
 #else
 			return toString() == other.toString();
 #endif
