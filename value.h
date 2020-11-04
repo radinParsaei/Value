@@ -311,11 +311,15 @@ class Value {
 		}
 
 		Value find(Value tofind) {
-			// Value tmp = tofind;
-			// tmp.toNum();
 			Value tmp2 = this;
 			tmp2.toTxt();
 			return NUMBER((long)tmp2.getString().find(tofind.getString()));
+		}
+
+		Value find(Value tofind, Value from) {
+			Value tmp2 = this;
+			tmp2.toTxt();
+			return NUMBER((long)tmp2.getString().find(tofind.getString(), from.getLong()));
 		}
 
 		Value toUpper() {
