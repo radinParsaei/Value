@@ -542,6 +542,10 @@ class Value {
 			return Value(-1);
 		}
 
+		char charAt(size_t p) {
+			return toString()[p];
+		}
+
 		bool operator==(Value other) {
 			return strictEquals(other);
 		}
