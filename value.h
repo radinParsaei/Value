@@ -519,6 +519,14 @@ class Value {
 		}
 
 		Value operator%(Value other) {
+			if (other == 1) {
+#ifdef USE_GMP_LIB
+				return Value(floor(number));
+#else
+				std::string tmp = number.toString();
+				return NUMBER(tmp.substr(0, tmp.find(".")));
+#endif
+			}
 			Value tmp = this;
 			tmp %= other;
 			return tmp;
