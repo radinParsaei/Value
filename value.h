@@ -661,6 +661,15 @@ class Value {
 			return (int)(tmp.getLong() | tmp2.getLong());
 		}
 
+		Value pow(Value a) {
+#ifdef USE_GMP_LIB
+			mpf_pow_ui(number.get_mpf_t(), number.get_mpf_t(), a.number.get_ui());
+#else
+			number = number.pow(a.number);
+#endif
+			return this;
+		}
+
 		Value operator^(Value other) {
 			Value tmp = this;
 			tmp.toNum();
