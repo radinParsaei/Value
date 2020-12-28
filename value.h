@@ -10,6 +10,11 @@ enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr };
 
 #include <string.h>
 #include <sstream>
+#include <vector>
+
+inline std::vector<unsigned long> usedPointersList;
+
+void freeUnusedPointer(long);
 
 #ifdef USE_GMP_LIB
 #define NUMBER mpf_class
@@ -76,8 +81,9 @@ class Value {
 		}
 
 		Value(void* a) {
-			type = Ptr;
 			*this = (long long) a;
+			type = Ptr;
+			usedPointersList.push_back((unsigned long)a);
 		}
 
 		Value(double data) {
@@ -130,6 +136,20 @@ class Value {
 			type = other->type;
 			this->text = other->text;
 			this->number = other->number;
+		}
+
+		~Value() {
+			if (type == Ptr) {
+				long pointer = getLong();
+				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), pointer);
+				if (tmp != usedPointersList.end()) {
+					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
+					tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
+					if (tmp == usedPointersList.end()) {
+						freeUnusedPointer(pointer);
+					}
+				}
+			}
 		}
 
 		Value& operator=(const char* data) {
