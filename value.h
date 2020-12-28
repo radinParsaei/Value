@@ -2,7 +2,7 @@
 #define __VALUE__H__
 
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False };
+enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr };
 #else
 #define VALUE_TYPE_NUMBER 0
 #define VALUE_TYPE_TEXT 1
@@ -73,6 +73,11 @@ class Value {
 			type = VALUE_TYPE_TEXT;
 			text = c;
 			number = 0;
+		}
+
+		Value(void* a) {
+			type = Ptr;
+			*this = (long long) a;
 		}
 
 		Value(double data) {
@@ -195,6 +200,8 @@ class Value {
 				return "null";
 			} else if (type == True) {
 				return "True";
+			} else if (type == Ptr) {
+				return NUMBER_TO_STRING;
 			} else {
 				return "False";
 			}
