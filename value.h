@@ -136,6 +136,9 @@ class Value {
 			type = other->type;
 			this->text = other->text;
 			this->number = other->number;
+			if (type == Ptr) {
+				usedPointersList.push_back(getLong());
+			}
 		}
 
 		~Value() {
@@ -181,14 +184,20 @@ class Value {
 
 		Value& operator=(Value other) {
 			type = other.type;
-			this->text = other.text;
 			this->number = other.number;
+			if (type == Ptr) {
+				usedPointersList.push_back(getLong());
+			}
+			this->text = other.text;
 			return *this;
 		}
 		Value& operator=(Value* other) {
 			type = other->type;
-			this->text = other->text;
 			this->number = other->number;
+			if (type == Ptr) {
+				usedPointersList.push_back(getLong());
+			}
+			this->text = other->text;
 			return *this;
 		}
 		Value& operator=(NUMBER n) {
@@ -298,6 +307,14 @@ class Value {
 		}
 
 #ifdef VALUE_MULTI_TYPE_SUPPORT
+		Value& toPtr() {
+			if(type == Ptr) return *this;
+			toNum();
+			type = Ptr;
+			usedPointersList.push_back(getLong());
+			return *this;
+		}
+
 		Value& toBool() {
 			if(type == True || type == False) return *this;
 			toNum();
@@ -422,8 +439,21 @@ class Value {
 		}
 
 		Value& operator+=(Value other) {
-			if ((type || other.type) == 0) {
+			if (type == Ptr) {
+				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
+				if (tmp != usedPointersList.end()) {
+					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
+				}
+			}
+			if (((type || other.type) == 0)
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+				|| ((type == Ptr || type == VALUE_TYPE_NUMBER) && (other.type == Ptr || other.type == VALUE_TYPE_NUMBER))
+#endif
+		) {
 				number += other.number;
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+				type = VALUE_TYPE_NUMBER;
+#endif
 			} else {
 				toTxt();
 				text += other.toString();
@@ -449,8 +479,21 @@ class Value {
 		}
 
 		Value& operator-=(Value other) {
-			if ((type || other.type) == 0) {
+			if (type == Ptr) {
+				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
+				if (tmp != usedPointersList.end()) {
+					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
+				}
+			}
+			if (((type || other.type) == 0)
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+				|| ((type == Ptr || type == VALUE_TYPE_NUMBER) && (other.type == Ptr || other.type == VALUE_TYPE_NUMBER))
+#endif
+		) {
 				number -= other.number;
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+				type = VALUE_TYPE_NUMBER;
+#endif
 			} else {
 				toTxt();
 				replace(other.toString(), "");
