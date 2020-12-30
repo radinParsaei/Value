@@ -810,8 +810,8 @@ inline std::ostream &operator<<(std::ostream &s, Value *v) {
 	return s << v->toString();
 }
 
-inline std::ostream &operator<<(std::ostream &s, Value &v) {
-	return s << v.toString();
+inline std::ostream &operator<<(std::ostream &s, const Value &v) {
+    return s << &v;
 }
 
 inline std::istream& operator>>(std::istream &in, Value &val) {
