@@ -2,7 +2,7 @@
 #define __VALUE__H__
 
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr };
+enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr, Array };
 #else
 #define VALUE_TYPE_NUMBER 0
 #define VALUE_TYPE_TEXT 1
@@ -37,6 +37,7 @@ class Value {
 #endif
 	NUMBER number;
 	std::string text;
+	std::vector<Value> array;
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
           std::ostringstream s;
@@ -49,7 +50,7 @@ class Value {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 		Value() { type = null; }
 		Value(STATES a) {
-			if (a == null || a == True || a == False) {
+			if (a == null || a == True || a == False || a == Array) {
 				type = a;
 			} else {
 				*this = (int)a;
@@ -231,6 +232,18 @@ class Value {
 				return "True";
 			} else if (type == Ptr) {
 				return NUMBER_TO_STRING;
+			} else if (type == Array) {
+				std::ostringstream s;
+				s << '[';
+				bool isFirst = true;
+				for (Value i : array) {
+					if (!isFirst)
+						s << ", ";
+					s << i.toString();
+					isFirst = false;
+				}
+				s << ']';
+				return s.str();
 			} else {
 				return "False";
 			}
@@ -740,6 +753,22 @@ class Value {
 			return this;
 		}
 
+		Value append(Value other) {
+			if (type == Array) {
+				array.push_back(other);
+			} else if (type == VALUE_TYPE_TEXT) {
+				text = other.toString();
+			} else if (other.type == VALUE_TYPE_TEXT) {
+				toTxt();
+				text = other.getString();
+			} else {
+				array.push_back(this);
+				type = Array;
+				array.push_back(other);
+			}
+			return this;
+		}
+
 		Value operator^(Value other) {
 			Value tmp = this;
 			tmp.toNum();
@@ -811,7 +840,7 @@ inline std::ostream &operator<<(std::ostream &s, Value *v) {
 }
 
 inline std::ostream &operator<<(std::ostream &s, const Value &v) {
-    return s << &v;
+	return s << (Value*) &v;
 }
 
 inline std::istream& operator>>(std::istream &in, Value &val) {
