@@ -757,10 +757,28 @@ class Value {
 			if (type == Array) {
 				array.push_back(other);
 			} else if (type == VALUE_TYPE_TEXT) {
-				text = other.toString();
+				text += other.toString();
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
-				text = other.getString();
+				text += other.getString();
+			} else {
+				array.push_back(this);
+				type = Array;
+				array.push_back(other);
+			}
+			return this;
+		}
+
+		Value insert(size_t point, Value other) {
+			if (type == Array) {
+				if(array.size() < (point + 1)) array.resize(point);
+				array.insert(array.begin() + point, other);
+			} else if (type == VALUE_TYPE_TEXT) {
+				Value tmp = other;
+				text.insert(point, tmp.toTxt().getString());
+			} else if (other.type == VALUE_TYPE_TEXT) {
+				toTxt();
+				text.insert(point, other.getString());
 			} else {
 				array.push_back(this);
 				type = Array;
