@@ -774,17 +774,46 @@ class Value {
 				if(array.size() < (point + 1)) array.resize(point);
 				array.insert(array.begin() + point, other);
 			} else if (type == VALUE_TYPE_TEXT) {
-				Value tmp = other;
-				text.insert(point, tmp.toTxt().getString());
+				text.insert(point, other.toString());
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
 				text.insert(point, other.getString());
 			} else {
 				array.push_back(this);
 				type = Array;
-				array.push_back(other);
+				if(array.size() < (point + 1)) array.resize(point);
+				array.insert(array.begin() + point, other);
 			}
 			return this;
+		}
+
+		Value set(size_t point, Value other) {
+			if (type == Array) {
+				if(array.size() < (point + 1)) array.resize(point + 1);
+				array[point] = other;
+			} else if (type == VALUE_TYPE_TEXT) {
+				text[point] = other.toString()[0];
+			} else if (other.type == VALUE_TYPE_TEXT) {
+				toTxt();
+				text[point] = other.getString()[0];
+			} else {
+				array.push_back(this);
+				type = Array;
+				if(array.size() < (point + 1)) array.resize(point + 1);
+				array[point] = other;
+			}
+			return this;
+		}
+
+		Value get(size_t point) {
+			if (type == Array) {
+				return array[point];
+			} else if (type == VALUE_TYPE_TEXT) {
+				return text[point];
+			} else {
+				Value tmp = this;
+				return tmp.toString()[point];
+			}
 		}
 
 		Value operator^(Value other) {
