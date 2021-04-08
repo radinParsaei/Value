@@ -8,7 +8,6 @@ enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr, A
 #define VALUE_TYPE_TEXT 1
 #endif
 
-#include <gmpxx.h>
 #include <string.h>
 #include <sstream>
 #include <vector>
@@ -19,6 +18,7 @@ void freeUnusedPointer(long);
 
 #ifdef USE_GMP_LIB
 #define NUMBER mpf_class
+#include <gmpxx.h>
 #include <string.h>
 #include <sstream>
 #include <iomanip>
@@ -35,9 +35,9 @@ class Value {
 #else
 	bool type;
 #endif
-	std::vector<Value> array;
 	NUMBER number;
 	std::string text;
+	std::vector<Value> array;
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
           std::ostringstream s;
@@ -137,6 +137,7 @@ class Value {
 			type = other->type;
 			this->text = other->text;
 			this->number = other->number;
+			this->array = other->array;
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
@@ -186,6 +187,7 @@ class Value {
 		Value& operator=(Value other) {
 			type = other.type;
 			this->number = other.number;
+			this->array = other.array;
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
@@ -195,6 +197,7 @@ class Value {
 		Value& operator=(Value* other) {
 			type = other->type;
 			this->number = other->number;
+			this->array = other->array;
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
