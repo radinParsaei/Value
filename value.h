@@ -81,11 +81,13 @@ class Value {
 			number = 0;
 		}
 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 		Value(void* a) {
 			*this = (long long) a;
 			type = Ptr;
 			usedPointersList.push_back((unsigned long)a);
 		}
+#endif
 
 		Value(double data) {
 			type = VALUE_TYPE_NUMBER;
@@ -138,11 +140,14 @@ class Value {
 			this->text = other->text;
 			this->number = other->number;
 			this->array = other->array;
-			if (type == Ptr) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+      if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
+#endif
 		}
 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 		~Value() {
 			if (type == Ptr) {
 				long pointer = getLong();
@@ -156,6 +161,7 @@ class Value {
 				}
 			}
 		}
+#endif
 
 		Value& operator=(const char* data) {
 			type = VALUE_TYPE_TEXT;
@@ -188,9 +194,11 @@ class Value {
 			type = other.type;
 			this->number = other.number;
 			this->array = other.array;
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
+#endif
 			this->text = other.text;
 			return *this;
 		}
@@ -198,9 +206,11 @@ class Value {
 			type = other->type;
 			this->number = other->number;
 			this->array = other->array;
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
+#endif      
 			this->text = other->text;
 			return *this;
 		}
@@ -455,12 +465,14 @@ class Value {
 		}
 
 		Value& operator+=(Value other) {
-			if (type == Ptr) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+      if (type == Ptr) {
 				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
 				if (tmp != usedPointersList.end()) {
 					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
 				}
 			}
+#endif
 			if (((type || other.type) == 0)
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 				|| ((type == Ptr || type == VALUE_TYPE_NUMBER) && (other.type == Ptr || other.type == VALUE_TYPE_NUMBER))
@@ -495,12 +507,14 @@ class Value {
 		}
 
 		Value& operator-=(Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Ptr) {
 				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
 				if (tmp != usedPointersList.end()) {
 					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
 				}
 			}
+#endif
 			if (((type || other.type) == 0)
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 				|| ((type == Ptr || type == VALUE_TYPE_NUMBER) && (other.type == Ptr || other.type == VALUE_TYPE_NUMBER))
@@ -610,7 +624,7 @@ class Value {
 				return Value(number - floor(number));
 #else
 				std::string tmp = number.toString();
-				return number - NUMBER(tmp.substr(0, tmp.find(".")));
+				return number - NUMBER(tmp.substr(0, tmp.find(".")).c_str());
 #endif
 			}
 			Value tmp = this;
@@ -757,61 +771,82 @@ class Value {
 		}
 
 		Value append(Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Array) {
 				array.push_back(other);
-			} else if (type == VALUE_TYPE_TEXT) {
+			} else 
+#endif
+      if (type == VALUE_TYPE_TEXT) {
 				text += other.toString();
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
 				text += other.getString();
-			} else {
+			}
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+       else {
 				array.push_back(this);
 				type = Array;
 				array.push_back(other);
 			}
+#endif      
 			return this;
 		}
 
 		Value insert(size_t point, Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Array) {
 				if(array.size() < (point + 1)) array.resize(point);
 				array.insert(array.begin() + point, other);
-			} else if (type == VALUE_TYPE_TEXT) {
+			} else
+#endif
+      if (type == VALUE_TYPE_TEXT) {
 				text.insert(point, other.toString());
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
 				text.insert(point, other.getString());
-			} else {
+			} 
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+      else {
 				array.push_back(this);
 				type = Array;
 				if(array.size() < (point + 1)) array.resize(point);
 				array.insert(array.begin() + point, other);
 			}
+#endif
 			return this;
 		}
 
 		Value set(size_t point, Value other) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Array) {
 				if(array.size() < (point + 1)) array.resize(point + 1);
 				array[point] = other;
-			} else if (type == VALUE_TYPE_TEXT) {
+			} else
+#endif
+      if (type == VALUE_TYPE_TEXT) {
 				text[point] = other.toString()[0];
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
 				text[point] = other.getString()[0];
-			} else {
+			}
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+      else {
 				array.push_back(this);
 				type = Array;
 				if(array.size() < (point + 1)) array.resize(point + 1);
 				array[point] = other;
 			}
+#endif
 			return this;
 		}
 
 		Value get(size_t point) {
+#ifdef VALUE_MULTI_TYPE_SUPPORT      
 			if (type == Array) {
 				return array[point];
-			} else if (type == VALUE_TYPE_TEXT) {
+			} else 
+#endif
+      if (type == VALUE_TYPE_TEXT) {
 				return text[point];
 			} else {
 				Value tmp = this;
