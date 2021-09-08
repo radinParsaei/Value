@@ -8,8 +8,10 @@ enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr, A
 #define VALUE_TYPE_TEXT 1
 #endif
 
-#include <string.h>
+#ifndef USE_ARDUINO_STRING
 #include <sstream>
+#endif
+#include <string.h>
 #include <vector>
 
 inline std::vector<unsigned long> usedPointersList;
@@ -36,7 +38,13 @@ class Value {
 	bool type;
 #endif
 	NUMBER number;
-	std::string text;
+#ifdef USE_ARDUINO_STRING
+#define TEXT String
+  String text;
+#else
+#define TEXT std::string
+  std::string text;
+#endif
 	std::vector<Value> array;
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
@@ -129,7 +137,7 @@ class Value {
 			this->number = 0;
 		}
 
-		Value(std::string data) {
+    Value(TEXT data) {
 			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
@@ -183,7 +191,7 @@ class Value {
 		}
 #endif
 
-		Value& operator=(std::string data) {
+		Value& operator=(TEXT data) {
 			type = VALUE_TYPE_TEXT;
 			this->text = data;
 			this->number = 0;
@@ -228,7 +236,7 @@ class Value {
 			return *this;
 		}
 
-		std::string toString() {
+		TEXT toString() {
 			if(type == VALUE_TYPE_TEXT){
 				return text;
 			} else
@@ -246,6 +254,7 @@ class Value {
 			} else if (type == Ptr) {
 				return NUMBER_TO_STRING;
 			} else if (type == Array) {
+#ifndef USE_ARDUINO_STRING
 				std::ostringstream s;
 				s << '[';
 				bool isFirst = true;
@@ -257,6 +266,20 @@ class Value {
 				}
 				s << ']';
 				return s.str();
+#else
+        String s;
+        s += '[';
+				bool isFirst = true;
+				for (Value i : array) {
+					if (!isFirst)
+						s += ", ";
+					s += i.toString();
+					isFirst = false;
+				}
+				s += ']';
+				return s;
+#endif
+#endif
 			} else {
 				return "False";
 			}
@@ -276,7 +299,7 @@ class Value {
 			return number;
 		}
 
-		std::string getString() {
+		TEXT getString() {
 			return text;
 		}
 
@@ -370,6 +393,7 @@ class Value {
 
 		Value replace(Value from, Value to) {
 			toTxt();
+#ifndef USE_ARDUINO_STRING
 			if(from.toString().empty())
         return text;
     	size_t c = 0;
@@ -378,18 +402,30 @@ class Value {
   			c += to.toString().length();
     	}
 			return text;
+#else
+      text.replace(from.toString(), to.toString());
+      return text;
+#endif
 		}
 
 		Value find(Value tofind) {
 			Value tmp2 = this;
 			tmp2.toTxt();
-			return NUMBER((long)tmp2.getString().find(tofind.getString()));
+#ifdef USE_ARDUINO_STRING
+      return NUMBER((long)tmp2.getString().indexOf(tofind.getString()));
+#else
+      return NUMBER((long)tmp2.getString().find(tofind.getString()));
+#endif
 		}
 
 		Value find(Value tofind, Value from) {
 			Value tmp2 = this;
 			tmp2.toTxt();
-			return NUMBER((long)tmp2.getString().find(tofind.getString(), from.getLong()));
+#ifdef USE_ARDUINO_STRING
+			return NUMBER((long)tmp2.getString().indexOf(tofind.getString(), from.getLong()));
+#else
+      return NUMBER((long)tmp2.getString().find(tofind.getString(), from.getLong()));
+#endif
 		}
 
 		Value toUpper() {
@@ -397,7 +433,11 @@ class Value {
 				toTxt();
 				return *this;
 			}
+#ifdef USE_ARDUINO_STRING
+			for (size_t c = 0; c < text.length(); c++) {
+#else
 			for (size_t c = 0; c < text.size(); c++) {
+#endif
 				if (text[c] > 96 && text[c] < 123) {
 					text[c] -= 32;
 				}
@@ -410,7 +450,11 @@ class Value {
 				toTxt();
 				return *this;
 			}
+#ifdef USE_ARDUINO_STRING
+			for (size_t c = 0; c < text.length(); c++) {
+#else
 			for (size_t c = 0; c < text.size(); c++) {
+#endif
 				if (text[c] < 91 && text[c] > 64) {
 					text[c] += 32;
 				}
@@ -425,7 +469,11 @@ class Value {
 			}
 			size_t i = 0;
 			while (text[i] == '\n' || text[i] == '\t' || text[i] == ' ') i++;
-			text = text.substr(i);
+#ifdef USE_ARDUINO_STRING
+      text = text.substring(i);
+#else
+      text = text.substr(i);
+#endif
 			return *this;
 		}
 
@@ -434,9 +482,17 @@ class Value {
 				toTxt();
 				return *this;
 			}
+#ifdef USE_ARDUINO_STRING
+			size_t i = text.length() - 1;
+#else
 			size_t i = text.size() - 1;
+#endif
 			while (text[i] == '\n' || text[i] == '\t' || text[i] == ' ') i--;
-			text = text.substr(0, i + 1);
+#ifdef USE_ARDUINO_STRING
+      text = text.substring(0, i + 1);
+#else
+      text = text.substr(0, i + 1);
+#endif
 			return *this;
 		}
 
@@ -457,11 +513,19 @@ class Value {
 		}
 
 		bool endsWith(Value data) {
+#ifdef USE_ARDUINO_STRING
+      return text.endsWith(data.toString());
+#else
 			return text.find(data.toString()) == text.size() - data.toString().size();
+#endif
 		}
 
 		bool startsWith(Value data) {
+#ifdef USE_ARDUINO_STRING
+      return text.startsWith(data.toString());
+#else
 			return text.find(data.toString()) == 0;
+#endif
 		}
 
 		Value& operator+=(Value other) {
@@ -552,23 +616,41 @@ class Value {
 			if ((type || other.type) == 0) {
 				number *= other.number;
 			} else if (type == VALUE_TYPE_NUMBER && other.type == VALUE_TYPE_TEXT) {
+#ifdef USE_ARDUINO_STRING
+        text = "";
+		    for (NUMBER i = 0; i < number; i++) text += other.text;
+				type = VALUE_TYPE_TEXT;
+#else
 		    std::ostringstream os;
 		    for(NUMBER i = 0; i < number; i++) os << other.text;
 		    text = os.str();
 				type = VALUE_TYPE_TEXT;
+#endif
 				number = 0;
 			} else if (type == VALUE_TYPE_TEXT && other.type == VALUE_TYPE_NUMBER) {
+#ifdef USE_ARDUINO_STRING
+        text = "";
+		    for (NUMBER i = 0; i < other.number; i++) text += text;
+				type = VALUE_TYPE_TEXT;
+#else
 		    std::ostringstream os;
 		    for(NUMBER i = 0; i < other.number; i++) os << text;
 		    text = os.str();
 				type = VALUE_TYPE_TEXT;
+#endif
 				number = 0;
 			} else {
 				toNum();
-				std::ostringstream os;
+#ifdef USE_ARDUINO_STRING
+        text = "";
+		    for (NUMBER i = 0; i < number; i++) text += other.text;
+				type = VALUE_TYPE_TEXT;
+#else
+		    std::ostringstream os;
 		    for(NUMBER i = 0; i < number; i++) os << other.text;
 		    text = os.str();
 				type = VALUE_TYPE_TEXT;
+#endif
 				number = 0;
 			}
 			return *this;
@@ -623,8 +705,12 @@ class Value {
 #ifdef USE_GMP_LIB
 				return Value(number - floor(number));
 #else
-				std::string tmp = number.toString();
+#ifndef USE_ARDUINO_STRING
+        std::string tmp = number.toString();
 				return number - NUMBER(tmp.substr(0, tmp.find(".")).c_str());
+#else
+        String tmp = number.toString();
+				return number - NUMBER(tmp.substring(0, tmp.indexOf(".")));
 #endif
 			}
 			Value tmp = this;
@@ -635,7 +721,11 @@ class Value {
 		Value operator[](Value i) {
 			Value tmp = this;
 			tmp.toTxt();
+#ifdef USE_ARDUINO_STRING
+			if (tmp.text.length() > i.getLong()) {
+#else
 			if (tmp.text.size() > i.getLong()) {
+#endif
 				return Value(tmp.text[i.getLong()]);
 			}
 			return Value(-1);
@@ -644,7 +734,11 @@ class Value {
 		Value operator[](int i) {
 			Value tmp = this;
 			tmp.toTxt();
+#ifdef USE_ARDUINO_STRING
+			if (tmp.text.length() > i) {
+#else
 			if (tmp.text.size() > i) {
+#endif
 				return Value(tmp.text[i]);
 			}
 			return Value(-1);
@@ -676,12 +770,20 @@ class Value {
 
 		Value substring(Value other) {
 			if (type == VALUE_TYPE_NUMBER) toTxt();
+#ifdef USE_ARDUINO_STRING
+			return text = text.substring(other.getLong());
+#else
 			return text = text.substr(other.getLong());
+#endif
 		}
 
 		Value substring(Value v1, Value v2) {
 			if (type == VALUE_TYPE_NUMBER) toTxt();
+#ifdef USE_ARDUINO_STRING
+			return text = text.substring(v1.getLong(), v2.getLong());
+#else
 			return text = text.substr(v1.getLong(), v2.getLong() - v1.getLong());
+#endif
 		}
 
 		Value reverse() {
@@ -691,7 +793,11 @@ class Value {
 			if (text == "") {
 				return *this;
 			}
+#ifdef USE_ARDUINO_STRING
+			size_t len = text.length() - 1;
+#else
 			size_t len = text.size() - 1;
+#endif
 			for (size_t i = 0; i < (len / 2) + 1; i++) {
 				char tmp = text[len - i];
 				text[len - i] = text[i];
@@ -800,10 +906,18 @@ class Value {
 			} else
 #endif
       if (type == VALUE_TYPE_TEXT) {
+#ifdef USE_ARDUINO_STRING
+        text = text.substring(0, point) + other.toString() + text.substring(point);
+#else
 				text.insert(point, other.toString());
+#endif
 			} else if (other.type == VALUE_TYPE_TEXT) {
 				toTxt();
+#ifdef USE_ARDUINO_STRING
+        text = text.substring(0, point) + other.getString() + text.substring(point);
+#else
 				text.insert(point, other.getString());
+#endif
 			} 
 #ifdef VALUE_MULTI_TYPE_SUPPORT
       else {
@@ -920,6 +1034,7 @@ class Value {
 #endif
 };
 
+#ifndef USE_ARDUINO_STRING
 inline std::ostream &operator<<(std::ostream &s, Value *v) {
 	return s << v->toString();
 }
@@ -934,5 +1049,6 @@ inline std::istream& operator>>(std::istream &in, Value &val) {
   val = a;
   return in;
 }
+#endif
 
 #endif
