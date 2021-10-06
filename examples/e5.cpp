@@ -3,6 +3,8 @@
 
 using namespace std;
 
+void freeUnusedPointer(long) {}
+
 int main() {
   Value a = "     HELLO WORLD";
   a.trimLeft();

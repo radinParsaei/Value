@@ -218,7 +218,7 @@ class Value {
 			if (type == Ptr) {
 				usedPointersList.push_back(getLong());
 			}
-#endif      
+#endif
 			this->text = other->text;
 			return *this;
 		}
@@ -239,15 +239,14 @@ class Value {
 		TEXT toString() {
 			if(type == VALUE_TYPE_TEXT){
 				return text;
-			} else
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			if (type == VALUE_TYPE_NUMBER)
-#endif
-			 {
+			} else if (type == VALUE_TYPE_NUMBER) {
 				return NUMBER_TO_STRING;
-			}
+#else
+			} else {return NUMBER_TO_STRING;}
+#endif
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			else if (type == null) {
+			} else if (type == null) {
 				return "null";
 			} else if (type == True) {
 				return "True";
@@ -278,7 +277,6 @@ class Value {
 				}
 				s += ']';
 				return s;
-#endif
 #endif
 			} else {
 				return "False";
@@ -712,6 +710,7 @@ class Value {
         String tmp = number.toString();
 				return number - NUMBER(tmp.substring(0, tmp.indexOf(".")));
 #endif
+#endif
 			}
 			Value tmp = this;
 			tmp %= other;
@@ -880,7 +879,7 @@ class Value {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Array) {
 				array.push_back(other);
-			} else 
+			} else
 #endif
       if (type == VALUE_TYPE_TEXT) {
 				text += other.toString();
@@ -894,7 +893,7 @@ class Value {
 				type = Array;
 				array.push_back(other);
 			}
-#endif      
+#endif
 			return this;
 		}
 
@@ -918,7 +917,7 @@ class Value {
 #else
 				text.insert(point, other.getString());
 #endif
-			} 
+			}
 #ifdef VALUE_MULTI_TYPE_SUPPORT
       else {
 				array.push_back(this);
@@ -955,10 +954,10 @@ class Value {
 		}
 
 		Value get(size_t point) {
-#ifdef VALUE_MULTI_TYPE_SUPPORT      
+#ifdef VALUE_MULTI_TYPE_SUPPORT
 			if (type == Array) {
 				return array[point];
-			} else 
+			} else
 #endif
       if (type == VALUE_TYPE_TEXT) {
 				return text[point];
