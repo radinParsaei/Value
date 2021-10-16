@@ -8,13 +8,17 @@ enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr, A
 #define VALUE_TYPE_TEXT 1
 #endif
 
+#if __cplusplus >= 201703
+inline std::vector<unsigned long> usedPointersList;
+#else
+static std::vector<unsigned long> usedPointersList;
+#endif
+
 #ifndef USE_ARDUINO_STRING
 #include <sstream>
 #endif
 #include <string.h>
 #include <vector>
-
-inline std::vector<unsigned long> usedPointersList;
 
 void freeUnusedPointer(long);
 
@@ -155,8 +159,17 @@ class Value {
 #endif
 		}
 
+    long getLong() {
+#ifdef USE_GMP_LIB
+      return this->number.get_si();
+#else
+      return this->number.toLong();
+#endif
+    }
+
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 		~Value() {
+#if __cplusplus >= 201703
 			if (type == Ptr) {
 				long pointer = getLong();
 				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), pointer);
@@ -169,6 +182,30 @@ class Value {
 				}
 			}
 		}
+#else
+    if (type == Ptr) {
+      long pointer = getLong();
+      int i = 0;
+      bool found = false;
+      for (unsigned long tmp : usedPointersList) {
+        i++;
+        if (tmp == pointer) {
+          found = true;
+          break;
+        }
+      }
+      if (found) usedPointersList.erase(usedPointersList.begin() + (i - 1));
+      found = false;
+      for (unsigned long tmp : usedPointersList) {
+        if (tmp == pointer) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) freeUnusedPointer(pointer);
+    }
+#endif
+}
 #endif
 
 		Value& operator=(const char* data) {
@@ -373,14 +410,6 @@ class Value {
 		}
 #endif
 
-		long getLong() {
-#ifdef USE_GMP_LIB
-			return this->number.get_si();
-#else
-			return this->number.toLong();
-#endif
-		}
-
 		double getDouble() {
 #ifdef USE_GMP_LIB
 			return this->number.get_d();
@@ -528,12 +557,28 @@ class Value {
 
 		Value& operator+=(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
+#if __cplusplus >= 201703
       if (type == Ptr) {
-				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
-				if (tmp != usedPointersList.end()) {
-					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
-				}
-			}
+        std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
+        if (tmp != usedPointersList.end()) {
+          usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
+        }
+      }
+#else
+    if (type == Ptr) {
+      long pointer = getLong();
+      int i = 0;
+      bool found = false;
+      for (unsigned long tmp : usedPointersList) {
+        i++;
+        if (tmp == pointer) {
+          found = true;
+          break;
+        }
+      }
+      if (found) usedPointersList.erase(usedPointersList.begin() + (i - 1));
+    }
+#endif
 #endif
 			if (((type || other.type) == 0)
 #ifdef VALUE_MULTI_TYPE_SUPPORT
@@ -570,12 +615,28 @@ class Value {
 
 		Value& operator-=(Value other) {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
-			if (type == Ptr) {
-				std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
-				if (tmp != usedPointersList.end()) {
-					usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
-				}
-			}
+#if __cplusplus >= 201703
+      if (type == Ptr) {
+        std::vector<unsigned long>::iterator tmp = std::find(usedPointersList.begin(), usedPointersList.end(), getLong());
+        if (tmp != usedPointersList.end()) {
+          usedPointersList.erase(usedPointersList.begin() + std::distance(usedPointersList.begin(), tmp));
+        }
+      }
+#else
+    if (type == Ptr) {
+      long pointer = getLong();
+      int i = 0;
+      bool found = false;
+      for (unsigned long tmp : usedPointersList) {
+        i++;
+        if (tmp == pointer) {
+          found = true;
+          break;
+        }
+      }
+      if (found) usedPointersList.erase(usedPointersList.begin() + (i - 1));
+    }
+#endif
 #endif
 			if (((type || other.type) == 0)
 #ifdef VALUE_MULTI_TYPE_SUPPORT
@@ -967,6 +1028,22 @@ class Value {
 			}
 		}
 
+   Value length() {
+#ifdef VALUE_MULTI_TYPE_SUPPORT
+     if (type == Array) {
+        return (long) array.size();
+      } else
+#endif
+      if (type == VALUE_TYPE_TEXT) {
+#ifndef USE_ARDUINO_STRING
+        return (long) text.size();
+#else
+        return (long) text.length();
+#endif
+      }
+      return -1;
+   }
+
 		Value operator^(Value other) {
 			Value tmp = this;
 			tmp.toNum();
@@ -1030,6 +1107,21 @@ class Value {
 			if (other.type == VALUE_TYPE_TEXT || type == VALUE_TYPE_TEXT) return false;
 			return number >= other.number;
 		}
+		static void print(Value v) {
+#ifndef USE_ARDUINO_STRING
+      std::cout << v.toString();
+#else
+      Serial.print(v.toString());
+#endif
+    }
+
+		static void println(Value v) {
+#ifndef USE_ARDUINO_STRING
+      std::cout << v.toString() << std::endl;
+#else
+      Serial.println(v.toString());
+#endif
+    }
 #endif
 };
 
