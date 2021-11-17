@@ -8,17 +8,31 @@ enum STATES { null = -1, VALUE_TYPE_NUMBER, VALUE_TYPE_TEXT, True, False, Ptr, A
 #define VALUE_TYPE_TEXT 1
 #endif
 
+#ifdef USE_GMP_LIB
+#define NUMBER mpf_class
+#include <gmpxx.h>
+#include <string.h>
+#include <sstream>
+#include <iomanip>
+#define NUMBER_TO_STRING mpf_class_to_string(this->number).c_str();
+#else
+#include <BigNumber.h>
+#define NUMBER BigNumber
+#define NUMBER_TO_STRING number.toString()
+#endif
+
+#ifndef USE_ARDUINO_STRING
+#include <sstream>
+#include <iostream>
+#endif
+#include <string.h>
+#include <vector>
+
 #if __cplusplus >= 201703
 inline std::vector<unsigned long> usedPointersList;
 #else
 static std::vector<unsigned long> usedPointersList;
 #endif
-
-#ifndef USE_ARDUINO_STRING
-#include <sstream>
-#endif
-#include <string.h>
-#include <vector>
 
 void freeUnusedPointer(long);
 
@@ -35,6 +49,16 @@ void freeUnusedPointer(long);
 #define NUMBER_TO_STRING number.toString()
 #endif
 
+#ifdef USE_ARDUINO_STRING
+#define TEXT String
+#else
+#define TEXT std::string
+#endif
+
+#ifdef PTR_TO_STRING
+TEXT ptrToString(long ptr);
+#endif
+
 class Value {
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 	STATES type;
@@ -42,13 +66,7 @@ class Value {
 	bool type;
 #endif
 	NUMBER number;
-#ifdef USE_ARDUINO_STRING
-#define TEXT String
-  String text;
-#else
-#define TEXT std::string
-  std::string text;
-#endif
+	TEXT text;
 	std::vector<Value> array;
 #ifdef USE_GMP_LIB
 	std::string mpf_class_to_string(mpf_class data) {
@@ -288,7 +306,11 @@ class Value {
 			} else if (type == True) {
 				return "True";
 			} else if (type == Ptr) {
-				return NUMBER_TO_STRING;
+				#ifdef PTR_TO_STRING
+					return ptrToString(getLong());
+				#else
+					return NUMBER_TO_STRING;
+				#endif
 			} else if (type == Array) {
 #ifndef USE_ARDUINO_STRING
 				std::ostringstream s;
@@ -580,11 +602,7 @@ class Value {
     }
 #endif
 #endif
-			if (((type || other.type) == 0)
-#ifdef VALUE_MULTI_TYPE_SUPPORT
-				|| ((type == Ptr || type == VALUE_TYPE_NUMBER) && (other.type == Ptr || other.type == VALUE_TYPE_NUMBER))
-#endif
-		) {
+			if (((type || other.type) == 0)) {
 				number += other.number;
 #ifdef VALUE_MULTI_TYPE_SUPPORT
 				type = VALUE_TYPE_NUMBER;
