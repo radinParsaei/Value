@@ -6,3 +6,8 @@ examples/e3
 examples/e4
 examples/e5
 examples/e6
+cmake_install.cmake
+CMakeFiles
+CMakeCache.txt
+Makefile
+basic
