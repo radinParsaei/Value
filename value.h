@@ -29,16 +29,54 @@
 #endif
 #endif
 
-enum class Types { Null = 0, True, False, Number, Text, Array };
+class Value;
+
+#ifdef USE_NOSTD_MAP
+class Pair {
+public:
+  Value* key;
+  Value* value;
+  Pair() {}
+  Pair& operator= (const Pair&);
+};
+#else
+#include <unordered_map>
+class HashFunction {
+public:
+  size_t operator() (const Value& v) const;
+};
+#endif
+
+enum class Types { Null = 0, True, False, Number, Text, Array, Map };
+
+#ifndef MAX_FIXED_MAP_SIZE
+#define MAX_FIXED_MAP_SIZE MAX_FIXED_ARRAY_SIZE
+#endif
 
 class Value {
-public:
+private:
+  Value(Value* v) {
+    this->data = v->data;
+    this->type = v->type;
+#ifdef USE_NOSTD_MAP
+    freeMemory = false;
+#endif
+  }
   union {
     NUMBER* number;
     TEXT* text;
     ARRAY* array;
+#ifdef USE_NOSTD_MAP
+    Array<Pair, MAX_FIXED_MAP_SIZE>* map;
+#else
+    std::unordered_map<Value, Value, HashFunction>* map;
+#endif
   } data;
   Types type = Types::Null;
+#ifdef USE_NOSTD_MAP
+  boolean freeMemory = true;
+#endif
+public:
   void clone() {
     if (type == Types::Text) {
       TEXT* t = new TEXT(*data.text);
@@ -49,6 +87,15 @@ public:
     } else if (type == Types::Array) {
       ARRAY* t = new ARRAY(*data.array);
       data.array = t;
+    } else if (type == Types::Map) {
+#ifndef USE_NOSTD_MAP
+      std::unordered_map<Value, Value, HashFunction>* t = new std::unordered_map<Value, Value, HashFunction>();
+      *t = *data.map;
+      data.map = t;
+#else
+      ARRAY* t = new ARRAY(*data.array);
+      data.array = t;
+#endif
     }
   }
 
@@ -63,12 +110,21 @@ public:
     } else if (type == Types::Array && data.array != 0) {
       delete data.array;
       data.array = 0;
+    } else if (type == Types::Map && data.map != 0) {
+      delete data.map;
+      data.map = 0;
     }
   }
   Value () { type = Types::Null; }
   Value (Types t) {
     if (t == Types::Array) {
       data.array = new ARRAY();
+    } else if (t == Types::Map) {
+#ifdef USE_NOSTD_MAP
+      data.map = new Array<Pair, MAX_FIXED_MAP_SIZE>();
+#else
+      data.map = new std::unordered_map<Value, Value, HashFunction>();
+#endif
     }
     type = t;
   }
@@ -101,13 +157,65 @@ public:
     type = v.type;
     clone();
   }
-  ~Value () { freeUnusedMemory(); } // free unused pointers when the object is destructing
-  void operator= (Value v) {
+  // free unused pointers when the object is destructing
+  ~Value () {
+#ifdef USE_NOSTD_MAP
+    if (freeMemory)
+#endif
+    freeUnusedMemory();
+  }
+
+  void operator= (const Value& v) {
     freeUnusedMemory();
     data = v.data;
     type = v.type;
     clone();
   }
+
+  void operator= (Types t) {
+    freeUnusedMemory();
+    if (t == Types::Array) {
+      data.array = new ARRAY();
+    } else if (t == Types::Map) {
+#ifdef USE_NOSTD_MAP
+      data.map = new Array<Pair, MAX_FIXED_MAP_SIZE>();
+#else
+      data.map = new std::unordered_map<Value, Value, HashFunction>();
+#endif
+    }
+    type = t;
+  }
+
+  void operator= (int n) {
+    freeUnusedMemory();
+    this->data.number = new NUMBER(n);
+    type = Types::Number;
+  }
+
+  void operator= (long n) {
+    freeUnusedMemory();
+    this->data.number = new NUMBER(n);
+    type = Types::Number;
+  }
+
+  void operator= (double n) {
+    freeUnusedMemory();
+    this->data.number = new NUMBER(n);
+    type = Types::Number;
+  }
+
+  void operator= (TEXT t) {
+    freeUnusedMemory();
+    this->data.text = &t;
+    type = Types::Text;
+  }
+
+  void operator= (const char* t) {
+    freeUnusedMemory();
+    this->data.text = new TEXT(t);
+    type = Types::Text;
+  }
+
   void append(Value v) {
 #ifdef USE_ARDUINO_ARRAY
     Value* value = new Value();
@@ -117,7 +225,51 @@ public:
     data.array->push_back(v);
 #endif
   }
-  TEXT toString() {
+
+  Types getType() const {
+    return type;
+  }
+
+  void put(Value k, Value v) {
+    if (type == Types::Map) {
+#ifndef USE_NOSTD_MAP
+      auto it = data.map->find(k);
+      if (it != data.map->end()) {
+        it->second = v;
+      } else {
+        data.map->insert(std::pair<Value, Value>(k, v));
+      }
+#else
+      Pair p;
+      Value* value = new Value();
+      *value = v;
+      Value* key = new Value();
+      *key = k;
+      p.key = key;
+      p.value = value;
+      data.map->push_back(p);
+#endif
+    }
+  }
+
+  Value get(Value k) {
+    if (type == Types::Map) {
+#ifdef USE_NOSTD_MAP
+      for (int i = 0; i < data.map->size(); i++) {
+        if (*(*data.map)[i].key == k) {
+          return (*data.map)[i].value;
+        }
+      }
+      return Types::Null;
+#else
+      return (*data.map)[k];
+#endif
+    } else {
+      return Types::Null;
+    }
+  }
+
+  TEXT toString() const {
     if (type == Types::Number) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream s;
@@ -161,8 +313,51 @@ public:
       }
       return s + "]";
 #endif
+    } else if (type == Types::Map) {
+#ifndef USE_NOSTD_MAP
+      std::ostringstream s;
+      s << '{';
+      std::unordered_map<Value, Value, HashFunction>::iterator it;
+      size_t size = std::distance((*data.map).begin(), (*data.map).end()) - 1;
+      for (it = (*data.map).begin(); it != (*data.map).end(); it++) {
+        s << it->first.toString() << " = " << it->second.toString();
+        if (std::distance((*data.map).begin(), it) != size) s << ", ";
+      }
+      s << '}';
+      return s.str();
+#else
+      String s = "{";
+      for (int i = 0; i < data.map->size(); i++) {
+        s += (*data.map)[i].key->toString() + " = " + (*data.map)[i].value->toString();
+        if (i != data.map->size() - 1) s += ", ";
+      }
+      return s + "}";
+#endif
     }
     return "";
   }
+
+  bool operator== (const Value& other) const {
+    if (other.type == type && type == Types::Text) {
+      return *data.text == *other.data.text;
+    } else if (other.type == type && type == Types::Number) {
+      return *data.number == *other.data.number;
+    } else if (other.type == type && (type == Types::True || type == Types::False || type == Types::Null)) {
+      return true;
+    }
+    return false;
+  }
 };
 
+
+#ifndef USE_NOSTD_MAP
+size_t HashFunction::operator() (const Value& v) const {
+  return (std::hash<std::string>() (v.toString())) ^
+          (std::hash<int>()((int) v.getType()));
+}
+#else
+Pair& Pair::operator= (const Pair& p) {
+  this->key = p.key;
+  this->value = p.value;
+}
+#endif

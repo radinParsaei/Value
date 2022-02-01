@@ -1,5 +1,5 @@
-#include <value.h>
 #include <iostream>
+#include <value.h>
 using namespace std;
 
 int main() {
@@ -17,4 +17,12 @@ int main() {
 	a.append(10);
 	a.append("Hello");
 	cout << a.toString() << endl;
+	a = Types::Map;
+	a.put(Types::True, "True");
+	a.put(Types::False, "False");
+	a.put(Types::Null, "NULL");
+	a.put(10, "ten");
+	a.put("Hello", "World");
+	std::cout << "Hello, " << a.get("Hello").toString() << "!!!" << std::endl;
+	std::cout << a.toString() << std::endl;
 }

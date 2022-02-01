@@ -18,6 +18,8 @@ if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
     add_compile_options(-fdata-sections -ffunction-sections)
 endif ()
 
+add_link_options(-O3)
+
 if (USE_GMP_LIB)
     find_package(GMPXX REQUIRED)
     find_package(GMP REQUIRED)
