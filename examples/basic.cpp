@@ -24,5 +24,9 @@ int main() {
 	a.put(10, "ten");
 	a.put("Hello", "World");
 	std::cout << "Hello, " << a.get("Hello").toString() << "!!!" << std::endl;
-	std::cout << a.toString() << std::endl;
+	Value b = 10;
+	Value c = 20;
+	c += "Hello World"; // 20Hello World
+	c -= " World"; // 20Hello
+	std::cout << (b + c).toString() << std::endl;
 }

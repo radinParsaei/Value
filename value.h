@@ -347,6 +347,150 @@ public:
     }
     return false;
   }
+
+  Value operator+=(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+      *data.number += *other.data.number;
+    } else if (type == Types::Text || other.type == Types::Text) { // If either a or b is text
+      auto temp = data;
+      if (type == Types::Text)
+        *data.text += other.toString();
+      else
+        data.text = new TEXT(toString() + other.toString());
+      if (type == Types::Number) delete temp.number;
+      if (type == Types::Array) delete temp.array;
+      if (type == Types::Map) delete temp.map;
+      type = Types::Text;
+    }
+    return *this;
+  }
+
+  Value operator+(Value other) {
+    Value v = *this;
+    v += other;
+    return v;
+  }
+
+  Value operator-=(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+      *data.number -= *other.data.number;
+    } else if (type == Types::Text || other.type == Types::Text) { // If either a or b is text
+      if (type == Types::Text) {
+        *data.text = toString();
+      } else {
+        TEXT* t = new TEXT(toString());
+        freeUnusedMemory();
+        data.text = t;
+      }
+#ifndef USE_ARDUINO_STRING
+      TEXT t = other.toString();
+      int i = data.text->find(t);
+      if (i != -1) data.text->replace(i, t.length(), "");
+#else
+      data.text->replace(other.toString(), "");
+#endif
+      type = Types::Text;
+    }
+    return *this;
+  }
+
+  Value operator-(Value other) {
+    Value v = *this;
+    v -= other;
+    return v;
+  }
+
+  Value operator*=(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+      *data.number *= *other.data.number;
+    } else if (type == Types::Text && other.type == Types::Number) {
+#ifndef USE_ARDUINO_STRING
+      std::ostringstream os;
+      for (NUMBER i = 0; i < *other.data.number; i++) {
+        os << toString();
+      }
+      *data.text = os.str();
+#else
+      String s;
+      for (NUMBER i = 0; i < *other.data.number; i++) {
+        s += toString();
+      }
+      *data.text = s;
+#endif
+    } else if (type == Types::Number && other.type == Types::Text) {
+#ifndef USE_ARDUINO_STRING
+      std::ostringstream os;
+      for (NUMBER i = 0; i < *data.number; i++) {
+        os << other.toString();
+      }
+      freeUnusedMemory();
+      type = Types::Text;
+      data.text = new TEXT(os.str());
+#else
+      String s;
+      for (NUMBER i = 0; i < *data.number; i++) {
+        s += other.toString();
+      }
+      freeUnusedMemory();
+      type = Types::Text;
+      data.text = new TEXT(s);
+#endif
+    }
+    return *this;
+  }
+
+  Value operator*(Value other) {
+    Value v = *this;
+    v *= other;
+    return v;
+  }
+
+  Value operator/=(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+      *data.number /= *other.data.number;
+    } else {
+      *this = 0;
+    }
+    return *this;
+  }
+
+  Value operator/(Value other) {
+    Value v = *this;
+    v /= other;
+    return v;
+  }
+
+  Value operator%=(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+#ifndef USE_BIG_NUMBER
+      *data.number = floor(*data.number);
+      mpz_class t(toString().c_str());
+      t %= *other.data.number;
+      *data.number = t;
+#else
+      *data.number = *data.number % *other.data.number;
+#endif
+    } else {
+      *this = 0;
+    }
+    return *this;
+  }
+
+  Value operator%(Value other) {
+    Value v = *this;
+    v %= other;
+    return v;
+  }
+
+  void pow(Value other) {
+    if (type == Types::Number && other.type == Types::Number) {
+#ifndef USE_BIG_NUMBER
+      mpf_pow_ui(data.number->get_mpf_t(), data.number->get_mpf_t(), other.data.number->get_ui());
+#else
+			*data.number = data.number->pow(*other.data.number);
+#endif
+    }
+  }
 };
 
 
