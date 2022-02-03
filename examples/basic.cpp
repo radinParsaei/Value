@@ -1,22 +1,21 @@
 #include <iostream>
 #include <value.h>
-using namespace std;
 
 int main() {
 	Value a = "Hello, World!!!";
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = 10;
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = Types::True;
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = Types::False;
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = Types::Null;
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = Types::Array;
 	a.append(10);
 	a.append("Hello");
-	cout << a.toString() << endl;
+	std::cout << a.toString() << std::endl;
 	a = Types::Map;
 	a.put(Types::True, "True");
 	a.put(Types::False, "False");
@@ -28,5 +27,6 @@ int main() {
 	Value c = 20;
 	c += "Hello World"; // 20Hello World
 	c -= " World"; // 20Hello
+	b++;
 	std::cout << (b + c).toString() << std::endl;
 }

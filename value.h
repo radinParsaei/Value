@@ -58,9 +58,7 @@ private:
   Value(Value* v) {
     this->data = v->data;
     this->type = v->type;
-#ifdef USE_NOSTD_MAP
     freeMemory = false;
-#endif
   }
   union {
     NUMBER* number;
@@ -73,9 +71,7 @@ private:
 #endif
   } data;
   Types type = Types::Null;
-#ifdef USE_NOSTD_MAP
-  boolean freeMemory = true;
-#endif
+  bool freeMemory = true;
 public:
   void clone() {
     if (type == Types::Text) {
@@ -159,10 +155,7 @@ public:
   }
   // free unused pointers when the object is destructing
   ~Value () {
-#ifdef USE_NOSTD_MAP
-    if (freeMemory)
-#endif
-    freeUnusedMemory();
+    if (freeMemory) freeUnusedMemory();
   }
 
   void operator= (const Value& v) {
@@ -362,7 +355,7 @@ public:
       if (type == Types::Map) delete temp.map;
       type = Types::Text;
     }
-    return *this;
+    return this;
   }
 
   Value operator+(Value other) {
@@ -391,7 +384,7 @@ public:
 #endif
       type = Types::Text;
     }
-    return *this;
+    return this;
   }
 
   Value operator-(Value other) {
@@ -436,7 +429,7 @@ public:
       data.text = new TEXT(s);
 #endif
     }
-    return *this;
+    return this;
   }
 
   Value operator*(Value other) {
@@ -451,7 +444,7 @@ public:
     } else {
       *this = 0;
     }
-    return *this;
+    return this;
   }
 
   Value operator/(Value other) {
@@ -473,13 +466,28 @@ public:
     } else {
       *this = 0;
     }
-    return *this;
+    return this;
   }
 
   Value operator%(Value other) {
     Value v = *this;
     v %= other;
     return v;
+  }
+
+  Value operator++(int) {
+    Value tmp = this;
+    if (type == Types::Number) {
+      *data.number += 1;
+    }
+    return tmp;
+  }
+
+  Value operator++() {
+    if (type == Types::Number) {
+      *data.number += 1;
+    }
+    return this;
   }
 
   void pow(Value other) {
@@ -503,5 +511,6 @@ size_t HashFunction::operator() (const Value& v) const {
 Pair& Pair::operator= (const Pair& p) {
   this->key = p.key;
   this->value = p.value;
+  return *this;
 }
 #endif
