@@ -331,14 +331,108 @@ public:
   }
 
   bool operator== (const Value& other) const {
-    if (other.type == type && type == Types::Text) {
-      return *data.text == *other.data.text;
-    } else if (other.type == type && type == Types::Number) {
-      return *data.number == *other.data.number;
-    } else if (other.type == type && (type == Types::True || type == Types::False || type == Types::Null)) {
-      return true;
+    if (other.type == type) {
+      if (type == Types::Text) {
+        return *data.text == *other.data.text;
+      } else if (type == Types::Number) {
+        return *data.number == *other.data.number;
+      } else if (type == Types::True || type == Types::False || type == Types::Null) {
+        return true;
+      } else if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+        if (data.array->size() == other.data.array->size()) {
+          for (size_t i = 0; i < data.array->size(); i++) {
+            if (*(*data.array)[i] != *(*other.data.array)[i]) return false;
+          }
+          return true;
+        }
+#else
+        return std::equal(data.array->begin(), data.array->end(), other.data.array->begin());
+#endif
+      } else if (type == Types::Map) {
+#ifdef USE_NOSTD_MAP
+        if (data.map->size() == other.data.map->size()) {
+          for (size_t i = 0; i < data.map->size(); i++) {
+            if (*(*data.map)[i].value != other.get((*data.map)[i].key)) return false;
+          }
+          return true;
+        }
+#else
+        return *data.map == *other.data.map;
+#endif
+      }
     }
     return false;
+  }
+
+  bool operator!= (const Value& other) const {
+    return !(*this == other);
+  }
+
+  bool operator> (const Value& other) const {
+    if (other.type == Types::Number && type == Types::Number) {
+      return *data.number > *other.data.number;
+    }
+    return false;
+  }
+
+  bool operator< (const Value& other) const {
+    if (other.type == Types::Number && type == Types::Number) {
+      return *data.number < *other.data.number;
+    }
+    return false;
+  }
+
+  Value operator! () const {
+    if (type == Types::True) {
+      return Types::False;
+    } else if (type == Types::False) {
+      return Types::True;
+    }
+    return Types::False;
+  }
+
+  double toDouble() const {
+#ifndef USE_BIG_NUMBER
+			return data.number->get_d();
+#else
+			return data.number->toDouble();
+#endif
+  }
+
+  long toLong() const {
+#ifndef USE_BIG_NUMBER
+      return data.number->get_si();
+#else
+      return data.number->toLong();
+#endif
+  }
+
+  long operator~ () const {
+    if (type == Types::Number) {
+      return ~toLong();
+    }
+    return 0;
+  }
+
+  inline operator int() {
+    return toLong();
+  }
+
+  inline operator long() {
+    return toLong();
+  }
+
+  inline operator double() {
+    return toDouble();
+  }
+
+  inline bool equals(const Value& v) {
+    return *this == v;
+  }
+
+  bool looksEqual(const Value& v) const {
+    return toString() == v.toString();
   }
 
   Value operator+=(Value other) {
