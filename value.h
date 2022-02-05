@@ -31,6 +31,11 @@
 
 class Value;
 
+#ifdef USE_ARDUINO_STRING
+int compareValue(const void *cmp1, const void *cmp2);
+int compareValueNumeric(const void *cmp1, const void *cmp2);
+#endif
+
 #ifdef USE_NOSTD_MAP
 class Pair {
 public:
@@ -435,6 +440,34 @@ public:
     return toString() == v.toString();
   }
 
+  void sort() {
+    if (type == Types::Array) {
+#ifdef USE_ARDUINO_STRING
+      qsort(data.array->data(), data.array->size(), sizeof(Value*), compareValue);
+#else
+      std::sort(data.array->begin(), data.array->end(), [=] (const Value& l, const Value& r) {
+        return l.toString() < r.toString();
+      });
+#endif
+    }
+  }
+
+  void numericSort() {
+    if (type == Types::Array) {
+#ifdef USE_ARDUINO_STRING
+      qsort(data.array->data(), data.array->size(), sizeof(Value*), compareValueNumeric);
+#else
+      std::sort(data.array->begin(), data.array->end(), [=] (const Value& l, const Value& r) {
+        if (l.type == Types::Number &&   r.type == Types::Number) {
+          return l < r;
+        } else {
+          return false;
+        }
+      });
+#endif
+    }
+  }
+
   Value operator+=(Value other) {
     if (type == Types::Number && other.type == Types::Number) {
       *data.number += *other.data.number;
@@ -452,7 +485,7 @@ public:
     return this;
   }
 
-  Value operator+(Value other) {
+  Value operator+(Value other) const {
     Value v = *this;
     v += other;
     return v;
@@ -481,7 +514,7 @@ public:
     return this;
   }
 
-  Value operator-(Value other) {
+  Value operator-(Value other) const {
     Value v = *this;
     v -= other;
     return v;
@@ -526,7 +559,7 @@ public:
     return this;
   }
 
-  Value operator*(Value other) {
+  Value operator*(Value other) const {
     Value v = *this;
     v *= other;
     return v;
@@ -541,7 +574,7 @@ public:
     return this;
   }
 
-  Value operator/(Value other) {
+  Value operator/(Value other) const {
     Value v = *this;
     v /= other;
     return v;
@@ -563,7 +596,7 @@ public:
     return this;
   }
 
-  Value operator%(Value other) {
+  Value operator%(Value other) const {
     Value v = *this;
     v %= other;
     return v;
@@ -580,6 +613,21 @@ public:
   Value operator++() {
     if (type == Types::Number) {
       *data.number += 1;
+    }
+    return this;
+  }
+
+    Value operator--(int) {
+    Value tmp = this;
+    if (type == Types::Number) {
+      *data.number -= 1;
+    }
+    return tmp;
+  }
+
+  Value operator--() {
+    if (type == Types::Number) {
+      *data.number -= 1;
     }
     return this;
   }
@@ -606,5 +654,19 @@ Pair& Pair::operator= (const Pair& p) {
   this->key = p.key;
   this->value = p.value;
   return *this;
+}
+#endif
+
+#ifdef USE_ARDUINO_STRING
+int compareValue(const void *cmp1, const void *cmp2) {
+  Value* a = *((Value **) cmp1);
+  Value* b = *((Value **) cmp2);
+  return a->toString().compareTo(b->toString());
+}
+
+int compareValueNumeric(const void *cmp1, const void *cmp2) {
+  Value* a = *((Value **) cmp1);
+  Value* b = *((Value **) cmp2);
+  return (int) (*a - *b);
 }
 #endif
