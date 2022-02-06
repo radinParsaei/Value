@@ -468,6 +468,65 @@ public:
     }
   }
 
+  void reverse() {
+    if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      size_t s = data.array->size();
+      if (s > 1) {
+        Value* tmp;
+        for (int i = 0; i < s / 2; i++) {
+          tmp = (*data.array)[i];
+          (*data.array)[i] = (*data.array)[s - (i + 1)];
+          (*data.array)[s - (i + 1)] = tmp;
+        }
+      }
+#else
+      std::reverse(data.array->begin(), data.array->end());
+#endif
+    } else if (type == Types::Text) {
+#ifdef USE_ARDUINO_ARRAY
+      size_t s = data.text->length();
+      if (s > 1) {
+        Value* tmp;
+        for (int i = 0; i < s / 2; i++) {
+          tmp = (*data.text)[i];
+          (*data.text)[i] = (*data.text)[s - (i + 1)];
+          (*data.text)[s - (i + 1)] = tmp;
+        }
+      }
+#else
+      std::reverse(data.text->begin(), data.text->end());
+#endif
+    }
+  }
+
+  void replace(Value a, Value b) {
+    if (type == Types::Text) {
+#ifndef USE_ARDUINO_STRING
+      TEXT t = a.toString();
+      int i = data.text->find(t);
+      if (i != -1) data.text->replace(i, t.length(), b.toString());
+#else
+      data.text->replace(a.toString(), b.toString());
+#endif
+    }
+  }
+
+  void toNumber() {
+    if (type == Types::Text) {
+      TEXT t = toString();
+      freeUnusedMemory();
+      type = Types::Number;
+      data.number = new NUMBER(t);
+    } else if (type == Types::True) {
+      data.number = new NUMBER(1);
+      type = Types::Number;
+    } else if (type == Types::False || type == Types::Null) {
+      data.number = new NUMBER(0);
+      type = Types::Number;
+    }
+  }
+
   Value operator+=(Value other) {
     if (type == Types::Number && other.type == Types::Number) {
       *data.number += *other.data.number;
