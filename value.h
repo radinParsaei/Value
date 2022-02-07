@@ -146,7 +146,7 @@ public:
     type = Types::Number;
   }
   Value (TEXT s) {
-    data.text = &s;
+    data.text = new TEXT(s);
     type = Types::Text;
   }
   Value (const char* s) {
@@ -510,6 +510,181 @@ public:
       data.text->replace(a.toString(), b.toString());
 #endif
     }
+  }
+
+  int indexOf(Value v, int index = 0) {
+    if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      return data.text->indexOf(v.toString(), index);
+#else
+      return data.text->find(v.toString(), index);
+#endif
+    } else if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      for (int i = index; i < data.array->size(); i++) {
+        if (*(*data.array)[i] == v) {
+          return i;
+        }
+      }
+#else
+      auto it = std::find(data.array->begin() + index, data.array->end(), v);
+      if (it != data.array->end()) {
+        return it - data.array->begin();
+      }
+#endif
+    }
+    return -1;
+  }
+
+  int lastIndexOf(Value v, int index) {
+    if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      return data.text->lastIndexOf(v.toString(), index);
+#else
+      return data.text->find_last_of(v.toString(), index);
+#endif
+    } else if (type == Types::Array) {
+      for (int i = index; i >= 0; i--) {
+#ifdef USE_ARDUINO_ARRAY
+        if (*(*data.array)[i] == v) {
+#else
+        if ((*data.array)[i] == v) {
+#endif
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  int lastIndexOf(Value v) {
+    if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      return data.text->lastIndexOf(v.toString());
+#else
+      return data.text->find_last_of(v.toString());
+#endif
+    } else if (type == Types::Array) {
+      for (int i = data.array->size(); i >= 0; i--) {
+#ifdef USE_ARDUINO_ARRAY
+        if (*(*data.array)[i] == v) {
+#else
+        if ((*data.array)[i] == v) {
+#endif
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  Value substring(Value other) {
+#ifdef USE_ARDUINO_STRING
+    return data.text->substring((long) other);
+#else
+    return data.text->substr((long) other);
+#endif
+  }
+
+  Value substring(Value v1, Value v2) {
+#ifdef USE_ARDUINO_STRING
+    return data.text->substring((long) v1, (long) v2);
+#else
+    return data.text->substr((long) v1, (long) v2 - (long) v1);
+#endif
+  }
+
+  inline int length() {
+    if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      return data.text->length();
+#else
+      return data.text->size();
+#endif
+    } else if (type == Types::Array) {
+      return data.array->size();
+    } else if (type == Types::Map) {
+      return data.map->size();
+    }
+    return 0;
+  }
+
+  Value split(Value d) {
+    Value res = Types::Array;
+    if (type == Types::Text) {
+      int start = 0;
+      int end = indexOf(d);
+      while (end != -1) {
+        res.append(substring(start, end));
+        start = end + d.length();
+        end = indexOf(d, start);
+      }
+      res.append(substring(start, end));
+    }
+    return res;
+  }
+
+  Value trimRight() {
+    if (type == Types::Text) {
+      int i = length() - 1;
+      while ((*data.text)[i] == '\n' || (*data.text)[i] == '\t' || (*data.text)[i] == ' ') i--;
+      return substring(0, i);
+    }
+    return "";
+  }
+
+  Value trimLeft() {
+    if (type == Types::Text) {
+      int i = 0;
+      while ((*data.text)[i] == '\n' || (*data.text)[i] == '\t' || (*data.text)[i] == ' ') i++;
+      return substring(i);
+    }
+    return "";
+  }
+
+  Value trim() {
+    if (type == Types::Text) {
+      return trimLeft().trimRight();
+    }
+    return "";
+  }
+
+  Value toUpper() {
+    TEXT t = *data.text;
+    for (size_t c = 0; c < length(); c++) {
+      if (t[c] > 96 && t[c] < 123) {
+        t[c] -= 32;
+      }
+    }
+    return t;
+  }
+
+  Value toLower() {
+    TEXT t = *data.text;
+    for (size_t c = 0; c < length(); c++) {
+      if (t[c] < 91 && t[c] > 64) {
+        t[c] += 32;
+      }
+    }
+    return t;
+  }
+
+  bool startsWith(Value v) {
+#ifdef USE_ARDUINO_STRING
+    return data.text->startsWith(v.toString());
+#else
+    return data.text->find(v.toString()) == 0;
+#endif
+  }
+
+  bool endsWith(Value v) {
+#ifdef USE_ARDUINO_STRING
+    return data.text->endsWith(v.toString());
+#else
+    TEXT t = v.toString();
+    int i = lastIndexOf(t);
+    return i == data.text->size() - t.size() || i == -1;
+#endif
   }
 
   void toNumber() {
