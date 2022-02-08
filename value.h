@@ -224,6 +224,26 @@ public:
 #endif
   }
 
+  Value pop() {
+    if (type == Types::Array) {
+      Value v = (*data.array)[data.array->size() - 1];
+      data.array->pop_back();
+      return v;
+    } else if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      size_t s = data.text->length() - 1;
+      char t = data.text->charAt(s);
+      data.text->remove(s);
+      return TEXT(t);
+#else
+      char t = (*data.text)[data.text->size() - 1];
+      data.text->pop_back();
+      return TEXT("") + t;
+#endif
+    }
+    return Types::Null;
+  }
+
   Types getType() const {
     return type;
   }
@@ -264,6 +284,72 @@ public:
 #endif
     } else {
       return Types::Null;
+    }
+  }
+
+  void set(Value i, Value v) {
+    if (type == Types::Map) {
+      put(i, v);
+    } else if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      Value* value = new Value();
+      *value = v;
+      long l = i;
+      Value* n = new Value(Types::Null);
+      while (data.array->size() < (l + 1)) {
+        data.array->push_back(n);
+      }
+      (*data.array)[l] = value;
+#else
+      long l = i;
+      if (data.array->size() < (l + 1)) data.array->resize(l + 1);
+      (*data.array)[l] = v;
+#endif
+    } else if (type == Types::Text && v.type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      long x = i;
+      String s = v.toString();
+      for (long j = x; j < x + v.length(); j++) {
+        data.text->setCharAt(j, s[j - x]);
+      }
+#else
+      data.text->replace((long) i, v.length(), v.toString());
+#endif
+    }
+  }
+
+  void insert(Value i, Value v) {
+    if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      long l = i;
+      if (l < data.array->size()) {
+        Value* value = new Value();
+        *value = v;
+        Value** p = data.array->data();
+        ARRAY* tmp = new ARRAY();
+        while (tmp->size() < data.array->size() + 1) {
+          tmp->push_back(0);
+        }
+        memcpy(tmp->data(), p, l + 1);
+        memcpy(tmp->data() + l + 1, p + l, (data.array->size()) - l + 2);
+        (*tmp)[l] = value;
+        freeUnusedMemory();
+        data.array = tmp;
+      } else {
+        set(i, v);
+      }
+#else
+      long l = i;
+      if (data.array->size() < (l + 1)) data.array->resize(l + 1);
+      data.array->insert(data.array->begin() + l, v);
+#endif
+    } else if (type == Types::Text && v.type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      long l = i;
+      *data.text = data.text->substring(0, l) + v.toString() + data.text->substring(l);
+#else
+      data.text->replace((long) i, 0, v.toString());
+#endif
     }
   }
 
@@ -685,6 +771,29 @@ public:
     int i = lastIndexOf(t);
     return i == data.text->size() - t.size() || i == -1;
 #endif
+  }
+
+  int codePointAt(Value at) {
+    if (type == Types::Text)
+      return (int) (*data.text)[(long) at];
+    return -1;
+  }
+
+  char charAt(Value at) {
+    if (type == Types::Text)
+      return (*data.text)[(long) at];
+    return 0;
+  }
+
+  Value operator[] (Value i) {
+    if (type == Types::Array) {
+      return (*data.array)[(long) i];
+    } else if (type == Types::Text) {
+      return TEXT("") + charAt(i);
+    } else if (type == Types::Map) {
+      return get(i);
+    }
+    return Types::Null;
   }
 
   void toNumber() {
