@@ -146,6 +146,10 @@ public:
     }
   }
   Value () { type = Types::Null; }
+  Value (bool b) {
+    if (b) type = Types::True;
+    else type = Types::False;
+  }
   Value (Types t) {
     if (t == Types::Array) {
       data.array = new ARRAY();
@@ -271,6 +275,13 @@ public:
     freeUnusedMemory();
     this->data.text = new TEXT(t);
     type = Types::Text;
+  }
+
+  void be(const Value& other, bool freeMem = false) { //copy a value without cloning it
+    freeUnusedMemory();
+    data = other.data;
+    type = other.type;
+    freeMemory = freeMem;
   }
 
   void append(Value v) {
@@ -624,6 +635,11 @@ public:
       return ~toLong();
     }
     return 0;
+  }
+
+  inline operator bool() const {
+    if (type == Types::True) return true;
+    return false;
   }
 
   inline operator int() const {
