@@ -295,9 +295,9 @@ public:
     type = Types::Number;
   }
 
-  void operator= (TEXT t) {
+  void operator= (const TEXT& t) {
     freeUnusedMemory();
-    this->data.text = &t;
+    this->data.text = new TEXT(t);
     type = Types::Text;
   }
 
@@ -322,6 +322,34 @@ public:
     data.array->emplace_back(v.data, v.type, true);
 #endif
     v.freeMemory = false;
+  }
+
+  void remove(size_t i) {
+#ifdef USE_ARDUINO_ARRAY
+      data.array->remove(i);
+#else
+      data.array->erase(data.array->begin() + i);
+#endif
+  }
+
+  void remove(const Value& i) {
+    if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      data.array->remove((long) i);
+#else
+      data.array->erase(data.array->begin() + (long) i);
+#endif
+    } else if (type == Types::Map) {
+#ifdef USE_NOSTD_MAP
+      for (int j = 0; j < data.map->size(); j++) {
+        if (*(*data.map)[j].key == i) {
+          data.map->remove((long) j);
+        }
+      }
+#else
+      data.map->erase(i);
+#endif
+    }
   }
 
   void _unsafeAppend(Value* v) {
@@ -385,6 +413,19 @@ public:
 #endif
     }
     return Types::Null;
+  }
+
+  void _pop() {
+    if (type == Types::Array) {
+      data.array->pop_back();
+    } else if (type == Types::Text) {
+#ifdef USE_ARDUINO_STRING
+      size_t s = data.text->length() - 1;
+      data.text->remove(s);
+#else
+      data.text->pop_back();
+#endif
+    }
   }
 
   inline Types getType() const {
@@ -686,6 +727,46 @@ public:
       return *data.number < other.data.smallNumber;
     } else if (type == Types::Number && other.type == Types::BigNumber) {
       return data.smallNumber < *other.data.number;
+    }
+#endif
+    return false;
+  }
+
+  bool operator<= (const Value& other) const {
+    if (other.type == Types::Number && type == Types::Number) {
+#ifdef USE_DOUBLE
+      return data.number <= data.number;
+#else
+      return data.smallNumber <= other.data.smallNumber;
+#endif
+    }
+#ifndef USE_DOUBLE
+    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+      return *data.number <= *other.data.number;
+    } else if (type == Types::BigNumber && other.type == Types::Number) {
+      return *data.number <= other.data.smallNumber;
+    } else if (type == Types::Number && other.type == Types::BigNumber) {
+      return data.smallNumber <= *other.data.number;
+    }
+#endif
+    return false;
+  }
+
+  bool operator>= (const Value& other) const {
+    if (other.type == Types::Number && type == Types::Number) {
+#ifdef USE_DOUBLE
+      return data.number >= data.number;
+#else
+      return data.smallNumber >= other.data.smallNumber;
+#endif
+    }
+#ifndef USE_DOUBLE
+    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+      return *data.number >= *other.data.number;
+    } else if (type == Types::BigNumber && other.type == Types::Number) {
+      return *data.number >= other.data.smallNumber;
+    } else if (type == Types::Number && other.type == Types::BigNumber) {
+      return data.smallNumber >= *other.data.number;
     }
 #endif
     return false;
