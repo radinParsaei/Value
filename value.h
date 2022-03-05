@@ -772,13 +772,13 @@ public:
     return false;
   }
 
-  Value operator! () const {
-    if (type == Types::True) {
-      return Types::False;
-    } else if (type == Types::False) {
-      return Types::True;
+  bool operator! () const {
+    if ((type == Types::Number || type == Types::BigNumber) && toLong() == 0)
+      return true;
+    if (type == Types::False) {
+      return true;
     }
-    return Types::False;
+    return false;
   }
 
   double toDouble() const {
@@ -1166,6 +1166,91 @@ public:
 #endif
       type = Types::Number;
     }
+  }
+
+  Value operator&=(const Value& other) {
+    if ((type == Types::True || type == Types::False) &&
+            (other.type == Types::True || other.type == Types::False)) {
+      *this = *this && other;
+    } else {
+      long a, b;
+      if (type == Types::True || type == Types::False) {
+        a = (int) ((bool) *this);
+      } else a = toLong();
+      if (other.type == Types::True || other.type == Types::False) {
+        b = (int) ((bool) other);
+      } else b = other.toLong();
+      *this = a & b;
+    }
+    return this;
+  }
+
+  Value operator&(const Value& other) const {
+    Value v = *this;
+    v &= other;
+    return v;
+  }
+
+  Value operator|=(const Value& other) {
+    if ((type == Types::True || type == Types::False) &&
+            (other.type == Types::True || other.type == Types::False)) {
+      *this = *this || other;
+    } else {
+      long a, b;
+      if (type == Types::True || type == Types::False) {
+        a = (int) ((bool) *this);
+      } else a = toLong();
+      if (other.type == Types::True || other.type == Types::False) {
+        b = (int) ((bool) other);
+      } else b = other.toLong();
+      *this = a | b;
+    }
+    return this;
+  }
+
+  Value operator|(const Value& other) const {
+    Value v = *this;
+    v |= other;
+    return v;
+  }
+
+  Value operator<<=(const Value& other) {
+    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+      *this = toLong() << other.toLong();
+    }
+    return this;
+  }
+
+  Value operator<<(const Value& other) const {
+    Value v = *this;
+    v <<= other;
+    return v;
+  }
+
+  Value operator>>=(const Value& other) {
+    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+      *this = toLong() >> other.toLong();
+    }
+    return this;
+  }
+
+  Value operator>>(const Value& other) const {
+    Value v = *this;
+    v >>= other;
+    return v;
+  }
+
+  Value operator^=(const Value& other) {
+    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+      *this = toLong() ^ other.toLong();
+    }
+    return this;
+  }
+
+  Value operator^(const Value& other) const {
+    Value v = *this;
+    v ^= other;
+    return v;
   }
 
   Value operator+=(const Value& other) {
