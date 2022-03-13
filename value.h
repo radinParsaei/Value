@@ -181,9 +181,20 @@ public:
     }
 #endif
     else if (type == Types::Array && data.array != 0) {
+#ifdef USE_ARDUINO_ARRAY
+      for (short i = 0; i < data.array->size(); i++) {
+        free((*data.array)[i]);
+      }
+#endif
       delete data.array;
       data.array = 0;
     } else if (type == Types::Map && data.map != 0) {
+#ifdef USE_NOSTD_MAP
+      for (short i = 0; i < data.map->size(); i++) {
+        free((*data.map)[i].key);
+        free((*data.map)[i].value);
+      }
+#endif
       delete data.map;
       data.map = 0;
     }
@@ -433,6 +444,7 @@ public:
 #ifdef USE_ARDUINO_ARRAY
       Value* v = (*data.array)[data.array->size() - 1];
       Value res(v->data, v->type, v->useCount);
+      delete v;
 #else
       Value& v = (*data.array)[data.array->size() - 1];
       Value res(v.data, v.type, v.useCount);
@@ -457,6 +469,10 @@ public:
   void _pop() {
     modify_linked()
     if (type == Types::Array) {
+#ifdef USE_ARDUINO_ARRAY
+      Value* v = (*data.array)[data.array->size() - 1];
+      delete v;
+#endif
       data.array->pop_back();
     } else if (type == Types::Text) {
 #ifdef USE_ARDUINO_STRING
@@ -556,7 +572,7 @@ public:
         memcpy(tmp->data(), p, l + 1);
         memcpy(tmp->data() + l + 1, p + l, (data.array->size()) - l + 2);
         (*tmp)[l] = value;
-        freeUnusedMemory();
+        delete data.array;
         data.array = tmp;
       } else {
         set(i, v);
@@ -835,7 +851,7 @@ public:
 #ifndef USE_DOUBLE
     else if (type == Types::BigNumber) {
 #ifdef USE_BIG_NUMBER
-      return data.number->getDouble();
+      return data.number->toDouble();
 #else
       return data.number->get_d();
 #endif
