@@ -386,6 +386,15 @@ public:
 #endif
   }
 
+  void remove(size_t i, size_t n) {
+    modify_linked()
+#ifdef USE_ARDUINO_ARRAY
+    data.array->remove(i);
+#else
+    data.array->erase(data.array->begin() + i, data.array->begin() + n);
+#endif
+  }
+
   void remove(size_t i) {
     modify_linked()
 #ifdef USE_ARDUINO_ARRAY
@@ -579,7 +588,7 @@ public:
       }
 #else
       long l = i;
-      if (data.array->size() < (l + 1)) data.array->resize(l + 1);
+      if (data.array->size() < (l + 1)) data.array->resize(l);
       data.array->insert(data.array->begin() + l, v);
 #endif
     } else if (type == Types::Text && v.type == Types::Text) {
