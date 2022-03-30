@@ -55,6 +55,47 @@
 #define IS_NUM(x) x.getType() == Types::Number || x.getType() == Types::BigNumber
 #endif
 
+#define _ISNUMBER(x) (x == Types::Number TREAT_AS_NUMBER(x))
+#define _ISBIGNUMBER(x) (x == Types::BigNumber TREAT_AS_BIG_NUMBER(x))
+#define _ISTEXT(x) (x == Types::Text TREAT_AS_TEXT(x))
+#define _ISNULL(x) (x == Types::Null TREAT_AS_NULL(x))
+#define _ISTRUE(x) (x == Types::True TREAT_AS_TRUE(x))
+#define _ISFALSE(x) (x == Types::False TREAT_AS_FALSE(x))
+#define _ISARR(x) (x == Types::Array TREAT_AS_ARRAY(x))
+#define _ISMAP(x) (x == Types::Map TREAT_AS_MAP(x))
+
+#ifndef TREAT_AS_NUMBER
+#define TREAT_AS_NUMBER(x) 
+#endif
+
+#ifndef TREAT_AS_BIG_NUMBER
+#define TREAT_AS_BIG_NUMBER(x) 
+#endif
+
+#ifndef TREAT_AS_TEXT
+#define TREAT_AS_TEXT(x) 
+#endif
+
+#ifndef TREAT_AS_NULL
+#define TREAT_AS_NULL(x) 
+#endif
+
+#ifndef TREAT_AS_TRUE
+#define TREAT_AS_TRUE(x) 
+#endif
+
+#ifndef TREAT_AS_FALSE
+#define TREAT_AS_FALSE(x) 
+#endif
+
+#ifndef TREAT_AS_ARRAY
+#define TREAT_AS_ARRAY(x) 
+#endif
+
+#ifndef TREAT_AS_MAP
+#define TREAT_AS_MAP(x) 
+#endif
+
 #define USE_COUNT_TYPE char
 #define modify_linked()     \
     if (copyBeforeModification) { \
@@ -96,7 +137,7 @@ public:
 };
 #endif
 
-enum class Types { Null = 0, True, False, Number, BigNumber, Text, Array, Map };
+enum class Types : char { Null = 0, True, False, Number, BigNumber, Text, Array, Map, __ADDITIONAL_TYPES__ };
 
 #ifndef MAX_FIXED_MAP_SIZE
 #define MAX_FIXED_MAP_SIZE MAX_FIXED_ARRAY_SIZE
@@ -131,21 +172,21 @@ public:
   USE_COUNT_TYPE* useCount = 0;
   bool copyBeforeModification = false;
   void clone() {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       TEXT* t = new TEXT(*data.text);
       data.text = t;
       (*useCount) --;
       useCount = new USE_COUNT_TYPE; *useCount = 0;
     } 
 #ifndef USE_DOUBLE
-    else if (type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(type)) {
       NUMBER* t = new NUMBER(*data.number);
       data.number = t;
       (*useCount) --;
       useCount = new USE_COUNT_TYPE; *useCount = 0;
     }
 #endif
-    else if (type == Types::Array) {
+    else if (_ISARR(type)) {
       ARRAY* t = new ARRAY(*data.array);
       data.array = t;
       (*useCount) --;
@@ -153,7 +194,7 @@ public:
 #if !defined(USE_ARDUINO_ARRAY) && defined(VECTOR_RESERVED_SIZE)
       data.array->reserve(VECTOR_RESERVED_SIZE);
 #endif
-    } else if (type == Types::Map) {
+    } else if (_ISMAP(type)) {
 #ifndef USE_NOSTD_MAP
       std::unordered_map<Value, Value, HashFunction>* t = new std::unordered_map<Value, Value, HashFunction>();
       *t = *data.map;
@@ -170,17 +211,17 @@ public:
   // free unused pointers
   void freeUnusedMemory() {
     _release_value(return)
-    if (type == Types::Text && data.text != 0) {
+    if (_ISTEXT(type) && data.text != 0) {
       delete data.text;
       data.text = 0;
     } 
 #ifndef USE_DOUBLE
-    else if (type == Types::BigNumber && data.number != 0) {
+    else if (_ISBIGNUMBER(type) && data.number != 0) {
       delete data.number;
       data.number = 0;
     }
 #endif
-    else if (type == Types::Array && data.array != 0) {
+    else if (_ISARR(type) && data.array != 0) {
 #ifdef USE_ARDUINO_ARRAY
       for (short i = 0; i < data.array->size(); i++) {
         free((*data.array)[i]);
@@ -188,7 +229,7 @@ public:
 #endif
       delete data.array;
       data.array = 0;
-    } else if (type == Types::Map && data.map != 0) {
+    } else if (_ISMAP(type) && data.map != 0) {
 #ifdef USE_NOSTD_MAP
       for (short i = 0; i < data.map->size(); i++) {
         free((*data.map)[i].key);
@@ -389,7 +430,10 @@ public:
   void remove(size_t i, size_t n) {
     modify_linked()
 #ifdef USE_ARDUINO_ARRAY
-    data.array->remove(i);
+    for (; n > i; n--) {
+      delete (*data.array)[i];
+      data.array->remove(i);
+    }
 #else
     data.array->erase(data.array->begin() + i, data.array->begin() + n);
 #endif
@@ -398,6 +442,7 @@ public:
   void remove(size_t i) {
     modify_linked()
 #ifdef USE_ARDUINO_ARRAY
+    delete (*data.array)[i];
     data.array->remove(i);
 #else
     data.array->erase(data.array->begin() + i);
@@ -406,13 +451,13 @@ public:
 
   void remove(const Value& i) {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       data.array->remove((long) i);
 #else
       data.array->erase(data.array->begin() + (long) i);
 #endif
-    } else if (type == Types::Map) {
+    } else if (_ISMAP(type)) {
 #ifdef USE_NOSTD_MAP
       for (int j = 0; j < data.map->size(); j++) {
         if (*(*data.map)[j].key == i) {
@@ -427,20 +472,20 @@ public:
 
   void clear() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
       data.array->clear();
-    } else if (type == Types::Text) {
+    } else if (_ISTEXT(type)) {
       *data.text = "";
     }
   }
 
   NUMBER getNumber() const {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number;
 #else
       return data.smallNumber;
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
       return *data.number;
 #endif
     }
@@ -449,7 +494,7 @@ public:
 
   Value pop() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       Value* v = (*data.array)[data.array->size() - 1];
       Value res(v->data, v->type, v->useCount);
@@ -460,7 +505,7 @@ public:
 #endif
       data.array->pop_back();
       return res;
-    } else if (type == Types::Text) {
+    } else if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       size_t s = data.text->length() - 1;
       char t = data.text->charAt(s);
@@ -477,13 +522,13 @@ public:
 
   void _pop() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       Value* v = (*data.array)[data.array->size() - 1];
       delete v;
 #endif
       data.array->pop_back();
-    } else if (type == Types::Text) {
+    } else if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       size_t s = data.text->length() - 1;
       data.text->remove(s);
@@ -497,13 +542,17 @@ public:
     return type;
   }
 
+  inline void setType(Types t) {
+    type = t;
+  }
+
   inline Data getData() const {
     return data;
   }
 
   void put(const Value& k, const Value& v) {
     modify_linked()
-    if (type == Types::Map) {
+    if (_ISMAP(type)) {
 #ifndef USE_NOSTD_MAP
       (*data.map)[k].be((Value*) &v);
 #else
@@ -520,7 +569,7 @@ public:
   }
 
   Value& get(const Value& k) const {
-    if (type == Types::Map) {
+    if (_ISMAP(type)) {
 #ifdef USE_NOSTD_MAP
       for (int i = 0; i < data.map->size(); i++) {
         if (*(*data.map)[i].key == k) {
@@ -535,14 +584,14 @@ public:
 
   void set(const Value& i, const Value& v) {
     modify_linked()
-    if (type == Types::Map) {
+    if (_ISMAP(type)) {
       put(i, v);
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       Value* value = new Value();
       *value = v;
       long l = i;
-      Value* n = new Value(Types::Null);
+      Value* n = new Value();
       while (data.array->size() < (l + 1)) {
         data.array->push_back(n);
       }
@@ -552,7 +601,7 @@ public:
       if (data.array->size() < (l + 1)) data.array->resize(l + 1);
       (*data.array)[l] = v;
 #endif
-    } else if (type == Types::Text && v.type == Types::Text) {
+    } else if (_ISTEXT(type) && _ISTEXT(v.type)) {
 #ifdef USE_ARDUINO_STRING
       long x = i;
       String s = v.toString();
@@ -567,7 +616,7 @@ public:
 
   void insert(Value i, Value v) {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       long l = i;
       if (l < data.array->size()) {
@@ -591,7 +640,7 @@ public:
       if (data.array->size() < (l + 1)) data.array->resize(l);
       data.array->insert(data.array->begin() + l, v);
 #endif
-    } else if (type == Types::Text && v.type == Types::Text) {
+    } else if (_ISTEXT(type) && _ISTEXT(v.type)) {
 #ifdef USE_ARDUINO_STRING
       long l = i;
       *data.text = data.text->substring(0, l) + v.toString() + data.text->substring(l);
@@ -601,8 +650,21 @@ public:
     }
   }
 
+  bool containsKey(const Value& k) const {
+#ifdef USE_NOSTD_MAP
+      for (int i = 0; i < data.map->size(); i++) {
+        if (*(*data.map)[i].key == k) {
+          return true;
+        }
+      }
+#else
+      return data.map->count(k);
+#endif
+    return false;
+  }
+
   TEXT toString() const {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
 #ifdef USE_ARDUINO_STRING
       unsigned char decimalPlaces = 0;
@@ -639,7 +701,7 @@ public:
 #endif
 #endif
 #ifndef USE_DOUBLE
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream s;
       s << std::setprecision(500) << *data.number;
@@ -648,22 +710,23 @@ public:
       return data.number->toString();
 #endif
 #endif
-    } else if (type == Types::Text) {
+    } else if (_ISTEXT(type)) {
       return *data.text;
-    } else if (type == Types::True) {
+    } else if (_ISTRUE(type)) {
       return "True";
-    } else if (type == Types::False) {
+    } else if (_ISFALSE(type)) {
       return "False";
-    } else if (type == Types::Null) {
+    } else if (_ISNULL(type)) {
       return "null";
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       String s = "[";
       for (int i = 0; i < data.array->size(); i++) {
         s += (*data.array)[i]->toString();
         if (i != data.array->size() - 1) s += ", ";
       }
-      return s + "]";
+      s += "]";
+      return s;
 #elif !defined(USE_ARDUINO_STRING)
       std::ostringstream s;
       s << '[';
@@ -683,15 +746,15 @@ public:
       }
       return s + "]";
 #endif
-    } else if (type == Types::Map) {
+    } else if (_ISMAP(type)) {
 #ifndef USE_NOSTD_MAP
       std::ostringstream s;
       s << '{';
       std::unordered_map<Value, Value, HashFunction>::iterator it;
       size_t size = std::distance((*data.map).begin(), (*data.map).end()) - 1;
-      for (it = (*data.map).begin(); it != (*data.map).end(); it++) {
+      for (it = data.map->begin(); it != data.map->end(); it++) {
         s << it->first.toString() << " = " << it->second.toString();
-        if (std::distance((*data.map).begin(), it) != size) s << ", ";
+        if (std::distance(data.map->begin(), it) != size) s << ", ";
       }
       s << '}';
       return s.str();
@@ -709,27 +772,27 @@ public:
 
   bool operator== (const Value& other) const {
 #ifndef USE_DOUBLE
-    if (type == Types::Number && other.type == Types::BigNumber) {
+    if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       return *other.data.number == data.smallNumber;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       return *data.number == other.data.smallNumber;
     }
 #endif
     if (other.type == type) {
-      if (type == Types::Number) {
+      if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
         return data.number == other.data.number;
 #else
         return data.smallNumber == other.data.smallNumber;
-      } else if (type == Types::BigNumber) {
+      } else if (_ISBIGNUMBER(type)) {
         return *data.number == *other.data.number;
 #endif
       }
-      if (type == Types::Text) {
+      if (_ISTEXT(type)) {
         return *data.text == *other.data.text;
-      } else if (type == Types::True || type == Types::False || type == Types::Null) {
+      } else if (_ISTRUE(type) || _ISFALSE(type) || _ISNULL(type)) {
         return true;
-      } else if (type == Types::Array) {
+      } else if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
         if (data.array->size() == other.data.array->size()) {
           for (size_t i = 0; i < data.array->size(); i++) {
@@ -740,7 +803,7 @@ public:
 #else
         return std::equal(data.array->begin(), data.array->end(), other.data.array->begin());
 #endif
-      } else if (type == Types::Map) {
+      } else if (_ISMAP(type)) {
 #ifdef USE_NOSTD_MAP
         if (data.map->size() == other.data.map->size()) {
           for (size_t i = 0; i < data.map->size(); i++) {
@@ -761,7 +824,7 @@ public:
   }
 
   bool operator> (const Value& other) const {
-    if (other.type == Types::Number && type == Types::Number) {
+    if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number > data.number;
 #else
@@ -769,11 +832,11 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(other.type) && _ISBIGNUMBER(type)) {
       return *data.number > *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       return *data.number > other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       return data.smallNumber > *other.data.number;
     }
 #endif
@@ -781,7 +844,7 @@ public:
   }
 
   bool operator< (const Value& other) const {
-    if (other.type == Types::Number && type == Types::Number) {
+    if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number < data.number;
 #else
@@ -789,11 +852,11 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(other.type) && _ISBIGNUMBER(type)) {
       return *data.number < *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       return *data.number < other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       return data.smallNumber < *other.data.number;
     }
 #endif
@@ -801,7 +864,7 @@ public:
   }
 
   bool operator<= (const Value& other) const {
-    if (other.type == Types::Number && type == Types::Number) {
+    if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number <= data.number;
 #else
@@ -809,11 +872,11 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(other.type) && _ISBIGNUMBER(type)) {
       return *data.number <= *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       return *data.number <= other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       return data.smallNumber <= *other.data.number;
     }
 #endif
@@ -821,7 +884,7 @@ public:
   }
 
   bool operator>= (const Value& other) const {
-    if (other.type == Types::Number && type == Types::Number) {
+    if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number >= data.number;
 #else
@@ -829,11 +892,11 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (other.type == Types::BigNumber && type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(other.type) && _ISBIGNUMBER(type)) {
       return *data.number >= *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       return *data.number >= other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       return data.smallNumber >= *other.data.number;
     }
 #endif
@@ -841,16 +904,16 @@ public:
   }
 
   bool operator! () const {
-    if ((type == Types::Number || type == Types::BigNumber) && toLong() == 0)
+    if ((_ISNUMBER(type) || _ISBIGNUMBER(type)) && toLong() == 0)
       return true;
-    if (type == Types::False) {
+    if (_ISFALSE(type)) {
       return true;
     }
     return false;
   }
 
   double toDouble() const {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number;
 #else
@@ -858,7 +921,7 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(type)) {
 #ifdef USE_BIG_NUMBER
       return data.number->toDouble();
 #else
@@ -870,7 +933,7 @@ public:
   }
 
   long toLong() const {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       return data.number;
 #else
@@ -878,7 +941,7 @@ public:
 #endif
     }
 #ifndef USE_DOUBLE
-    else if (type == Types::BigNumber) {
+    else if (_ISBIGNUMBER(type)) {
 #ifdef USE_BIG_NUMBER
       return data.number->toLong();
 #else
@@ -890,16 +953,16 @@ public:
   }
 
   long operator~ () const {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
       return ~toLong();
     }
     return 0;
   }
 
   Value operator- () const {
-    if (type == Types::Number
+    if (_ISNUMBER(type)
 #ifndef USE_DOUBLE
-    || type == Types::BigNumber
+    || _ISBIGNUMBER(type)
 #endif
     ) {
       return *this * Value(-1);
@@ -908,7 +971,7 @@ public:
   }
 
   inline operator bool() const {
-    if (type == Types::True) return true;
+    if (_ISTRUE(type)) return true;
     return false;
   }
 
@@ -934,7 +997,7 @@ public:
 
   void sort() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_STRING
       qsort(data.array->data(), data.array->size(), sizeof(Value*), compareValue);
 #else
@@ -947,12 +1010,12 @@ public:
 
   void numericSort() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_STRING
       qsort(data.array->data(), data.array->size(), sizeof(Value*), compareValueNumeric);
 #else
       std::sort(data.array->begin(), data.array->end(), [=] (const Value& l, const Value& r) {
-        if (l.type == Types::Number &&   r.type == Types::Number) {
+        if (_ISNUMBER(l.type) &&   _ISNUMBER(r.type)) {
           return l < r;
         } else {
           return false;
@@ -964,7 +1027,7 @@ public:
 
   void reverse() {
     modify_linked()
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       size_t s = data.array->size();
       if (s > 1) {
@@ -978,7 +1041,7 @@ public:
 #else
       std::reverse(data.array->begin(), data.array->end());
 #endif
-    } else if (type == Types::Text) {
+    } else if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_ARRAY
       size_t s = data.text->length();
       if (s > 1) {
@@ -997,7 +1060,7 @@ public:
 
   void replace(Value a, Value b) {
     modify_linked()
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
 #ifndef USE_ARDUINO_STRING
       TEXT t = a.toString();
       int i = data.text->find(t);
@@ -1009,13 +1072,13 @@ public:
   }
 
   int indexOf(Value v, int index = 0) const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       return data.text->indexOf(v.toString(), index);
 #else
       return data.text->find(v.toString(), index);
 #endif
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       for (int i = index; i < data.array->size(); i++) {
         if (*(*data.array)[i] == v) {
@@ -1033,13 +1096,13 @@ public:
   }
 
   int lastIndexOf(Value v, int index) const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       return data.text->lastIndexOf(v.toString(), index);
 #else
       return data.text->find_last_of(v.toString(), index);
 #endif
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
       for (int i = index; i >= 0; i--) {
 #ifdef USE_ARDUINO_ARRAY
         if (*(*data.array)[i] == v) {
@@ -1054,13 +1117,13 @@ public:
   }
 
   int lastIndexOf(Value v) const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       return data.text->lastIndexOf(v.toString());
 #else
       return data.text->find_last_of(v.toString());
 #endif
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
       for (int i = data.array->size(); i >= 0; i--) {
 #ifdef USE_ARDUINO_ARRAY
         if (*(*data.array)[i] == v) {
@@ -1091,23 +1154,47 @@ public:
   }
 
   inline int length() const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
 #ifdef USE_ARDUINO_STRING
       return data.text->length();
 #else
       return data.text->size();
 #endif
-    } else if (type == Types::Array) {
+    } else if (_ISARR(type)) {
       return data.array->size();
-    } else if (type == Types::Map) {
+    } else if (_ISMAP(type)) {
       return data.map->size();
     }
     return 0;
   }
 
+  const Value& getKeyAt(size_t index) {
+    if (_ISMAP(type)) {
+#ifndef USE_NOSTD_MAP
+      std::unordered_map<Value, Value>::iterator it = data.map->begin();
+      std::advance(it, index);
+      return it->first;
+#else
+      return (*data.map)[index].key;
+#endif
+    }
+  }
+
+  const Value& getValueAt(size_t index) {
+    if (_ISMAP(type)) {
+#ifndef USE_NOSTD_MAP
+      std::unordered_map<Value, Value>::iterator it = data.map->begin();
+      std::advance(it, index);
+      return it->second;
+#else
+      return *(*data.map)[index].value;
+#endif
+    }
+  }
+
   Value split(Value d) const {
     Value res = Types::Array;
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       int start = 0;
       int end = indexOf(d);
       while (end != -1) {
@@ -1121,7 +1208,7 @@ public:
   }
 
   Value trimRight() const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       int i = length() - 1;
       while ((*data.text)[i] == '\n' || (*data.text)[i] == '\t' || (*data.text)[i] == ' ') i--;
       return substring(0, i + 1);
@@ -1130,7 +1217,7 @@ public:
   }
 
   Value trimLeft() const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       int i = 0;
       while ((*data.text)[i] == '\n' || (*data.text)[i] == '\t' || (*data.text)[i] == ' ') i++;
       return substring(i);
@@ -1139,7 +1226,7 @@ public:
   }
 
   Value trim() const {
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       return trimLeft().trimRight();
     }
     return "";
@@ -1184,32 +1271,32 @@ public:
   }
 
   int codePointAt(const Value& at) const {
-    if (type == Types::Text)
+    if (_ISTEXT(type))
       return (int) (*data.text)[(long) at];
     return -1;
   }
 
   char charAt(const Value& at) const {
-    if (type == Types::Text)
+    if (_ISTEXT(type))
       return (*data.text)[(long) at];
     return 0;
   }
 
   Value& operator[] (const Value& i) const {
-    if (type == Types::Array) {
+    if (_ISARR(type)) {
 #ifdef USE_ARDUINO_ARRAY
       return *(*data.array)[(long) i];
 #else
       return (*data.array)[(long) i];
 #endif
-    } else if (type == Types::Map) {
+    } else if (_ISMAP(type)) {
       return get(i);
     }
   }
 
   void toNumber() {
     modify_linked()
-    if (type == Types::Text) {
+    if (_ISTEXT(type)) {
       TEXT t = toString();
       freeUnusedMemory();
 #ifndef USE_DOUBLE
@@ -1224,14 +1311,14 @@ public:
       data.number = NUMBER_FROM_STRING(t.c_str());
       type = Types::Number;
 #endif
-    } else if (type == Types::True) {
+    } else if (_ISTRUE(type)) {
 #ifndef USE_DOUBLE
     data.smallNumber = 1;
 #else
     data.number = 1;
 #endif
       type = Types::Number;
-    } else if (type == Types::False || type == Types::Null) {
+    } else if (_ISFALSE(type) || _ISNULL(type)) {
 #ifndef USE_DOUBLE
     data.smallNumber = 0;
 #else
@@ -1243,15 +1330,15 @@ public:
 
   Value operator&=(const Value& other) {
     modify_linked()
-    if ((type == Types::True || type == Types::False) &&
-            (other.type == Types::True || other.type == Types::False)) {
+    if ((_ISTRUE(type) || _ISFALSE(type)) &&
+            (_ISTRUE(other.type) || _ISFALSE(other.type))) {
       *this = *this && other;
     } else {
       long a, b;
-      if (type == Types::True || type == Types::False) {
+      if (_ISTRUE(type) || _ISFALSE(type)) {
         a = (int) ((bool) *this);
       } else a = toLong();
-      if (other.type == Types::True || other.type == Types::False) {
+      if (_ISTRUE(other.type) || _ISFALSE(other.type)) {
         b = (int) ((bool) other);
       } else b = other.toLong();
       *this = a & b;
@@ -1267,15 +1354,15 @@ public:
 
   Value operator|=(const Value& other) {
     modify_linked()
-    if ((type == Types::True || type == Types::False) &&
-            (other.type == Types::True || other.type == Types::False)) {
+    if ((_ISTRUE(type) || _ISFALSE(type)) &&
+            (_ISTRUE(other.type) || _ISFALSE(other.type))) {
       *this = *this || other;
     } else {
       long a, b;
-      if (type == Types::True || type == Types::False) {
+      if (_ISTRUE(type) || _ISFALSE(type)) {
         a = (int) ((bool) *this);
       } else a = toLong();
-      if (other.type == Types::True || other.type == Types::False) {
+      if (_ISTRUE(other.type) || _ISFALSE(other.type)) {
         b = (int) ((bool) other);
       } else b = other.toLong();
       *this = a | b;
@@ -1291,7 +1378,7 @@ public:
 
   Value operator<<=(const Value& other) {
     modify_linked()
-    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+    if (IS_NUM(other) && (_ISNUMBER(type) || _ISBIGNUMBER(type))) {
       *this = toLong() << other.toLong();
     }
     return this;
@@ -1305,7 +1392,7 @@ public:
 
   Value operator>>=(const Value& other) {
     modify_linked()
-    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+    if (IS_NUM(other) && (_ISNUMBER(type) || _ISBIGNUMBER(type))) {
       *this = toLong() >> other.toLong();
     }
     return this;
@@ -1319,7 +1406,7 @@ public:
 
   Value operator^=(const Value& other) {
     modify_linked()
-    if (IS_NUM(other) && (type == Types::Number || type == Types::BigNumber)) {
+    if (IS_NUM(other) && (_ISNUMBER(type) || _ISBIGNUMBER(type))) {
       *this = toLong() ^ other.toLong();
     }
     return this;
@@ -1334,9 +1421,9 @@ public:
   Value operator+=(const Value& other) {
     modify_linked()
 #ifndef USE_DOUBLE
-    if (type == Types::BigNumber && other.type == Types::BigNumber) {
+    if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number += *other.data.number;
-    } else if (type == Types::Number && other.type == Types::Number) {
+    } else if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
       if (isinf(data.smallNumber + other.data.smallNumber)) {
         type = Types::BigNumber;
         data.number = new NUMBER(data.smallNumber);
@@ -1344,18 +1431,18 @@ public:
       } else {
         data.smallNumber += other.data.smallNumber;
       }
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       *data.number += other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       type = Types::BigNumber;
       data.number = new NUMBER(data.smallNumber);
       *data.number += *other.data.number;
 #else
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
       data.number += other.data.number;
 #endif
-    } else if (type == Types::Text || other.type == Types::Text) { // If either a or b is text
-      if (type == Types::Text) {
+    } else if (_ISTEXT(type) || _ISTEXT(other.type)) { // If either a or b is text
+      if (_ISTEXT(type)) {
         *data.text += other.toString();
       } else {
         _release_value()
@@ -1363,10 +1450,10 @@ public:
         auto temp = data;
         data.text = new TEXT(toString() + other.toString());
 #ifndef USE_DOUBLE
-        if (type == Types::BigNumber) delete temp.number;
+        if (_ISBIGNUMBER(type)) delete temp.number;
 #endif
-        if (type == Types::Array) delete temp.array;
-        if (type == Types::Map) delete temp.map;
+        if (_ISARR(type)) delete temp.array;
+        if (_ISMAP(type)) delete temp.map;
         type = Types::Text;
       }
     }
@@ -1381,24 +1468,24 @@ public:
 
   Value operator-=(const Value& other) {
     modify_linked()
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
       data.number -= other.data.number;
 #else
       data.smallNumber -= other.data.smallNumber;
 #endif
 #ifndef USE_DOUBLE
-    } else if (type == Types::BigNumber && other.type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number -= *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       *data.number -= other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       type = Types::BigNumber;
       data.number = new NUMBER(data.smallNumber);
       *data.number -= *other.data.number;
 #endif
-    } else if (type == Types::Text || other.type == Types::Text) { // If either a or b is text
-      if (type == Types::Text) {
+    } else if (_ISTEXT(type) || _ISTEXT(other.type)) { // If either a or b is text
+      if (_ISTEXT(type)) {
         *data.text = toString();
       } else {
         TEXT* t = new TEXT(toString());
@@ -1425,7 +1512,7 @@ public:
 
   Value operator*=(const Value& other) {
     modify_linked()
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
       data.number *= other.data.number;
 #else
@@ -1437,16 +1524,16 @@ public:
       } else {
         data.smallNumber *= d;
       }
-    } else if (type == Types::BigNumber && other.type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number *= *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       *data.number *= other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       type = Types::BigNumber;
       data.number = new NUMBER(data.smallNumber);
       *data.number *= *other.data.number;
 #endif
-    } else if (type == Types::Text && other.type == Types::BigNumber) {
+    } else if (_ISTEXT(type) && _ISBIGNUMBER(other.type)) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream os;
       for (NUMBER i = 0; i < 
@@ -1472,7 +1559,7 @@ public:
       }
       *data.text = s;
 #endif
-    } else if (type == Types::BigNumber && other.type == Types::Text) {
+    } else if (_ISBIGNUMBER(type) && _ISTEXT(other.type)) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream os;
       for (NUMBER i = 0; i < 
@@ -1502,7 +1589,7 @@ public:
       type = Types::Text;
       data.text = new TEXT(s);
 #endif
-    } else if (type == Types::Text && other.type == Types::Number) {
+    } else if (_ISTEXT(type) && _ISNUMBER(other.type)) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream os;
       for (long i = 0; i < 
@@ -1528,7 +1615,7 @@ public:
       }
       *data.text = s;
 #endif
-    } else if (type == Types::BigNumber && other.type == Types::Text) {
+    } else if (_ISBIGNUMBER(type) && _ISTEXT(other.type)) {
 #ifndef USE_ARDUINO_STRING
       std::ostringstream os;
       for (NUMBER i = 0; i < 
@@ -1570,16 +1657,16 @@ public:
 
   Value operator/=(const Value& other) {
     modify_linked()
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
       data.number /= other.data.number;
 #else
       data.smallNumber /= other.data.smallNumber;
-    } else if (type == Types::BigNumber && other.type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number /= *other.data.number;
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
       *data.number /= other.data.smallNumber;
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       type = Types::BigNumber;
       data.number = new NUMBER(data.smallNumber);
       *data.number /= *other.data.number;
@@ -1598,12 +1685,12 @@ public:
 
   Value operator%=(const Value& other) {
     modify_linked()
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
       data.number = (long) data.number % (long) other.data.number;
 #else
       data.smallNumber = (long) data.smallNumber % (long) other.data.smallNumber;
-    } else if (type == Types::BigNumber && other.type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
 #ifndef USE_BIG_NUMBER
       *data.number = floor(*data.number);
       mpz_class t(toString().c_str());
@@ -1612,7 +1699,7 @@ public:
 #else
       *data.number = *data.number % *other.data.number;
 #endif
-    } else if (type == Types::BigNumber && other.type == Types::Number) {
+    } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
 #ifndef USE_BIG_NUMBER
       *data.number = floor(*data.number);
       mpz_class t(toString().c_str());
@@ -1621,7 +1708,7 @@ public:
 #else
       *data.number = *data.number % other.data.smallNumber;
 #endif
-    } else if (type == Types::Number && other.type == Types::BigNumber) {
+    } else if (_ISNUMBER(type) && _ISBIGNUMBER(other.type)) {
       data.smallNumber = (long) data.smallNumber % (long) other;
 #endif
     } else {
@@ -1638,12 +1725,12 @@ public:
 
   Value operator++(int) {
     Value tmp = this;
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number ++;
 #else
       data.smallNumber ++;
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
       *data.number += 1;
 #endif
     }
@@ -1651,12 +1738,12 @@ public:
   }
 
   Value operator++() {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number ++;
 #else
       data.smallNumber ++;
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
       *data.number += 1;
 #endif
     }
@@ -1665,12 +1752,12 @@ public:
 
   Value operator--(int) {
     Value tmp = this;
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number --;
 #else
       data.smallNumber --;
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
       *data.number -= 1;
 #endif
     }
@@ -1678,12 +1765,12 @@ public:
   }
 
   Value operator--() {
-    if (type == Types::Number) {
+    if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number --;
 #else
       data.smallNumber --;
-    } else if (type == Types::BigNumber) {
+    } else if (_ISBIGNUMBER(type)) {
       *data.number -= 1;
 #endif
     }
@@ -1692,12 +1779,12 @@ public:
 
   void pow(const Value& other) {
     modify_linked()
-    if (type == Types::Number && other.type == Types::Number) {
+    if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
       data.number = ::pow(data.number, other.data.number);
 #else
       data.smallNumber = ::pow(data.smallNumber, other.data.smallNumber);
-    } else if (type == Types::BigNumber && IS_NUM(other)) {
+    } else if (_ISBIGNUMBER(type) && IS_NUM(other)) {
 #ifndef USE_BIG_NUMBER
       mpf_pow_ui(data.number->get_mpf_t(), data.number->get_mpf_t(), (long) other);
 #else
