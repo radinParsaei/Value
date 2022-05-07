@@ -22,6 +22,8 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#elif defined(__AVR__)
+#include <stdlib.h>
 #endif
 #endif
 
@@ -59,11 +61,11 @@ inline unsigned char countDigits(long x) {
         (x < 10000 ? 4 :
         (x < 100000 ? 5 :
         (x < 1000000 ? 6 :
-        (x < 10000000 ? 7 :  
-        (x < 100000000 ? 8 :  
+        (x < 10000000 ? 7 :
+        (x < 100000000 ? 8 :
         (x < 1000000000 ? 9 :  
         10)))))))));
-}  
+}
 
 #ifdef USE_ARDUINO_ARRAY
 #include <Array.h> // library by peterpolidoro (https://github.com/janelia-arduino/Array)
@@ -80,13 +82,13 @@ inline unsigned char countDigits(long x) {
 #endif
 #endif
 
-#ifdef USE_DOUBLE
-#define IS_NUM(x) x.getType() == Types::Number
-#else
-#define IS_NUM(x) x.getType() == Types::Number || x.getType() == Types::BigNumber
-#endif
+//#ifdef USE_DOUBLE
+//#define IS_NUM(x) x.getType() == Types::Number || x.getType() == Types::SmallNumber
+//#else
+#define IS_NUM(x) x.getType() == Types::Number || x.getType() == Types::BigNumber || x.getType() == Types::SmallNumber
+//#endif
 
-#define _ISNUMBER(x) (x == Types::Number TREAT_AS_NUMBER(x))
+#define _ISNUMBER(x) (x == Types::Number || x == Types::SmallNumber TREAT_AS_NUMBER(x))
 #define _ISBIGNUMBER(x) (x == Types::BigNumber TREAT_AS_BIG_NUMBER(x))
 #define _ISTEXT(x) (x == Types::Text TREAT_AS_TEXT(x))
 #define _ISNULL(x) (x == Types::Null TREAT_AS_NULL(x))
@@ -176,7 +178,7 @@ namespace std {
 }
 #endif
 
-enum class Types : char { Null = 0, True, False, Number, BigNumber, Text, Array, Map, __ADDITIONAL_TYPES__ };
+enum class Types : char { Null = 0, True, False, Number, BigNumber, Text, Array, Map, SmallNumber, __ADDITIONAL_TYPES__ };
 
 #ifndef MAX_FIXED_MAP_SIZE
 #define MAX_FIXED_MAP_SIZE MAX_FIXED_ARRAY_SIZE
@@ -439,6 +441,10 @@ public:
   }
 
   void operator= (const TEXT& t) {
+    if (type == Types::Text && !copyBeforeModification) {
+      *data.text = t;
+      return;
+    }
     freeUnusedMemory();
     copyBeforeModification = false;
     this->data.text = new TEXT(t);
@@ -447,12 +453,30 @@ public:
   }
 
   void operator= (const char* t) {
+    if (type == Types::Text && !copyBeforeModification) {
+      *data.text = t;
+      return;
+    }
     freeUnusedMemory();
     copyBeforeModification = false;
     this->data.text = new TEXT(t);
     type = Types::Text;
     useCount = new USE_COUNT_TYPE; *useCount = 0;
   }
+
+#ifndef USE_DOUBLE
+  void operator= (const NUMBER& n) {
+    if (type == Types::BigNumber && !copyBeforeModification) {
+      *data.number = n;
+      return;
+    }
+    freeUnusedMemory();
+    copyBeforeModification = false;
+    this->data.number = new NUMBER(n);
+    type = Types::BigNumber;
+    useCount = new USE_COUNT_TYPE; *useCount = 0;
+  }
+#endif
 
   void append(const Value& v, bool _clone = true) {
     modify_linked()
@@ -709,7 +733,7 @@ public:
       // t.pop_back();
       // return t;
       std::ostringstream s;
-      s << std::setprecision(16) << data.number << std::endl;
+      s << std::setprecision(16) << data.number;
       return s.str();
 #endif
 #else
@@ -729,7 +753,7 @@ public:
       // if (t[t.size() - 1] == '.') t.pop_back();
       // return t;
       std::ostringstream s;
-      s << std::setprecision(16) << data.smallNumber << std::endl;
+      s << std::setprecision(16) << data.smallNumber;
       return s.str();
 #endif
 #endif
@@ -755,7 +779,8 @@ public:
 #ifdef USE_ARDUINO_ARRAY
       String s = "[";
       for (int i = 0; i < data.array->size(); i++) {
-        s += (*data.array)[i]->toString();
+        if ((*data.array)[i] == this) s += "[...]";
+        else s += (*data.array)[i]->toString();
         if (i != data.array->size() - 1) s += ", ";
       }
       s += "]";
@@ -765,7 +790,8 @@ public:
       s << '[';
       if (!data.array->empty()) {
         for (int i = 0; i < data.array->size(); i++) {
-          s << (*data.array)[i].toString();
+          if (&(*data.array)[i] == this) s << "[...]";
+          else s << (*data.array)[i].toString();
           if (i != data.array->size() - 1) s << ", ";
         }
       }
@@ -774,7 +800,8 @@ public:
 #else
       String s = "[";
       for (int i = 0; i < data.array->size(); i++) {
-        s += (*data.array)[i].toString();
+        if (&(*data.array)[i] == this) s += "[...]";
+        else s += (*data.array)[i].toString();
         if (i != data.array->size() - 1) s += ", ";
       }
       return s + "]";
@@ -811,7 +838,7 @@ public:
       return *data.number == other.data.smallNumber;
     }
 #endif
-    if (other.type == type) {
+    if (other.type == type || (_ISNUMBER(other.type) && _ISNUMBER(type))) {
       if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
         return data.number == other.data.number;
@@ -859,7 +886,7 @@ public:
   bool operator> (const Value& other) const {
     if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
-      return data.number > data.number;
+      return data.number > other.data.number;
 #else
       return data.smallNumber > other.data.smallNumber;
 #endif
@@ -879,7 +906,7 @@ public:
   bool operator< (const Value& other) const {
     if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
-      return data.number < data.number;
+      return data.number < other.data.number;
 #else
       return data.smallNumber < other.data.smallNumber;
 #endif
@@ -899,7 +926,7 @@ public:
   bool operator<= (const Value& other) const {
     if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
-      return data.number <= data.number;
+      return data.number <= other.data.number;
 #else
       return data.smallNumber <= other.data.smallNumber;
 #endif
@@ -919,7 +946,7 @@ public:
   bool operator>= (const Value& other) const {
     if (_ISNUMBER(other.type) && _ISNUMBER(type)) {
 #ifdef USE_DOUBLE
-      return data.number >= data.number;
+      return data.number >= other.data.number;
 #else
       return data.smallNumber >= other.data.smallNumber;
 #endif
@@ -1434,28 +1461,33 @@ public:
     return v;
   }
 
-  Value operator+=(const Value& other) {
+  Value& operator+=(const Value& other) {
     modify_linked()
 #ifndef USE_DOUBLE
     if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number += *other.data.number;
     } else if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
-      unsigned char digitCount = countDigits(data.smallNumber);
-      unsigned char otherDigitCount = countDigits(other.data.smallNumber);
-      bool limitExceed = digitCount + otherDigitCount > 14;
-      if ((data.smallNumber < 0) ^ (other.data.smallNumber < 0)) limitExceed = false; // one of the numbers is negative
-      if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
-#ifndef USE_BIG_NUMBER
-        NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
-        data.number = new NUMBER(std::to_string(data.smallNumber));
-#else
-        NUMBER n = NUMBER(other.toString().c_str());
-        data.number = new NUMBER(toString().c_str());
-#endif
-        type = Types::BigNumber;
-        useCount = new USE_COUNT_TYPE; *useCount = 0;
-        *data.number += n;
+      if (type != Types::SmallNumber) {
+        unsigned char digitCount = countDigits(data.smallNumber);
+        unsigned char otherDigitCount = countDigits(other.data.smallNumber);
+        bool limitExceed = digitCount + otherDigitCount > 14;
+        if ((data.smallNumber < 0) ^ (other.data.smallNumber < 0)) limitExceed = false; // one of the numbers is negative
+        if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
+  #ifndef USE_BIG_NUMBER
+          NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
+          data.number = new NUMBER(std::to_string(data.smallNumber));
+  #else
+          NUMBER n = NUMBER(other.toString().c_str());
+          data.number = new NUMBER(toString().c_str());
+  #endif
+          type = Types::BigNumber;
+          useCount = new USE_COUNT_TYPE; *useCount = 0;
+          *data.number += n;
+        } else {
+          goto addDoubles;
+        }
       } else {
+        addDoubles:
         data.smallNumber += other.toDouble();
       }
     } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
@@ -1494,7 +1526,7 @@ public:
         type = Types::Text;
       }
     }
-    return this;
+    return *this;
   }
 
   Value operator+(const Value& other) const {
@@ -1503,28 +1535,33 @@ public:
     return v;
   }
 
-  Value operator-=(const Value& other) {
+  Value& operator-=(const Value& other) {
     modify_linked()
 #ifndef USE_DOUBLE
     if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number -= *other.data.number;
     } else if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
-      unsigned char digitCount = countDigits(data.smallNumber);
-      unsigned char otherDigitCount = countDigits(other.data.smallNumber);
-      bool limitExceed = digitCount + otherDigitCount > 14;
-      if ((data.smallNumber > 0) == (other.data.smallNumber > 0)) limitExceed = false; // both of the numbers have the same sign
-      if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
-#ifndef USE_BIG_NUMBER
-        NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
-        data.number = new NUMBER(std::to_string(data.smallNumber));
-#else
-        NUMBER n = NUMBER(other.toString().c_str());
-        data.number = new NUMBER(toString().c_str());
-#endif
-        type = Types::BigNumber;
-        useCount = new USE_COUNT_TYPE; *useCount = 0;
-        *data.number -= n;
+      if (type != Types::SmallNumber) {
+        unsigned char digitCount = countDigits(data.smallNumber);
+        unsigned char otherDigitCount = countDigits(other.data.smallNumber);
+        bool limitExceed = digitCount + otherDigitCount > 14;
+        if ((data.smallNumber > 0) == (other.data.smallNumber > 0)) limitExceed = false; // both of the numbers have the same sign
+        if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
+  #ifndef USE_BIG_NUMBER
+          NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
+          data.number = new NUMBER(std::to_string(data.smallNumber));
+  #else
+          NUMBER n = NUMBER(other.toString().c_str());
+          data.number = new NUMBER(toString().c_str());
+  #endif
+          type = Types::BigNumber;
+          useCount = new USE_COUNT_TYPE; *useCount = 0;
+          *data.number -= n;
+        } else {
+          goto subDoubles;
+        }
       } else {
+        subDoubles:
         data.smallNumber -= other.toDouble();
       }
     } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
@@ -1564,7 +1601,7 @@ public:
 #endif
       type = Types::Text;
     }
-    return this;
+    return *this;
   }
 
   Value operator-(const Value& other) const {
@@ -1573,34 +1610,39 @@ public:
     return v;
   }
 
-  Value operator*=(const Value& other) {
+  Value& operator*=(const Value& other) {
     modify_linked()
 #ifndef USE_DOUBLE
     if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number *= *other.data.number;
     } else if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
-      unsigned char digitCount = countDigits(data.smallNumber);
-      unsigned char otherDigitCount = countDigits(other.data.smallNumber);
-      bool limitExceed = digitCount + otherDigitCount > 8;
-      double t = data.smallNumber, t2 = other.data.smallNumber;
-      t *= 1000; t2 *= 1000;
-      if (fmod(t, 1) != 0 || fmod(t2, 1) != 0) {
-        limitExceed = true;
-      } else if (::floor(data.smallNumber) == 0 || ::floor(other.data.smallNumber) == 0) {
-        limitExceed = false;
-      }
-      if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
-#ifndef USE_BIG_NUMBER
-        NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
-        data.number = new NUMBER(std::to_string(data.smallNumber));
-#else
-        NUMBER n = NUMBER(other.toString().c_str());
-        data.number = new NUMBER(toString().c_str());
-#endif
-        type = Types::BigNumber;
-        useCount = new USE_COUNT_TYPE; *useCount = 0;
-        *data.number *= n;
+      if (type != Types::SmallNumber) {
+        unsigned char digitCount = countDigits(data.smallNumber);
+        unsigned char otherDigitCount = countDigits(other.data.smallNumber);
+        bool limitExceed = digitCount + otherDigitCount > 8;
+        double t = data.smallNumber, t2 = other.data.smallNumber;
+        t *= 1000; t2 *= 1000;
+        if (fmod(t, 1) != 0 || fmod(t2, 1) != 0) {
+          limitExceed = true;
+        } else if (::floor(data.smallNumber) == 0 || ::floor(other.data.smallNumber) == 0) {
+          limitExceed = false;
+        }
+        if (limitExceed || digitCount > 8 || otherDigitCount > 8) {
+  #ifndef USE_BIG_NUMBER
+          NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
+          data.number = new NUMBER(std::to_string(data.smallNumber));
+  #else
+          NUMBER n = NUMBER(other.toString().c_str());
+          data.number = new NUMBER(toString().c_str());
+  #endif
+          type = Types::BigNumber;
+          useCount = new USE_COUNT_TYPE; *useCount = 0;
+          *data.number *= n;
+        } else {
+          goto multiplyDoubles;
+        }
       } else {
+        multiplyDoubles:
         data.smallNumber *= other.toDouble();
       }
     } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
@@ -1736,7 +1778,7 @@ public:
       data.text = new TEXT(s);
 #endif
     }
-    return this;
+    return *this;
   }
 
   Value operator*(const Value& other) const {
@@ -1745,44 +1787,49 @@ public:
     return v;
   }
 
-  Value operator/=(const Value& other) {
+  Value& operator/=(const Value& other) {
     modify_linked()
 #ifndef USE_DOUBLE
     if (_ISBIGNUMBER(type) && _ISBIGNUMBER(other.type)) {
       *data.number /= *other.data.number;
     } else if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
-      bool limitExceed = false;
-      unsigned char otherDigitCount = countDigits(other.data.smallNumber);
-      unsigned char digitCount = countDigits(data.smallNumber);
-      if (digitCount > 8 || otherDigitCount > 8) {
-        limitExceed = true;
-      } else {
-        double t = data.smallNumber, t2 = other.data.smallNumber;
-        t *= 1000; t2 *= 1000;
-        if (fmod(t, 1) != 0 || fmod(t2, 1) != 0) {
+      if (type != Types::SmallNumber) {
+        bool limitExceed = false;
+        unsigned char otherDigitCount = countDigits(other.data.smallNumber);
+        unsigned char digitCount = countDigits(data.smallNumber);
+        if (digitCount > 8 || otherDigitCount > 8) {
           limitExceed = true;
-        } else if (fmod(data.smallNumber, 1) != 0) {
-          if (otherDigitCount + 3 > 9) {
+        } else {
+          double t = data.smallNumber, t2 = other.data.smallNumber;
+          t *= 1000; t2 *= 1000;
+          if (fmod(t, 1) != 0 || fmod(t2, 1) != 0) {
             limitExceed = true;
-          }
-        } else if (fmod(other.data.smallNumber, 1) != 0) {
-          if (digitCount + 3 > 9) {
-            limitExceed = true;
+          } else if (fmod(data.smallNumber, 1) != 0) {
+            if (otherDigitCount + 3 > 9) {
+              limitExceed = true;
+            }
+          } else if (fmod(other.data.smallNumber, 1) != 0) {
+            if (digitCount + 3 > 9) {
+              limitExceed = true;
+            }
           }
         }
-      }
-      if (limitExceed) {
-#ifndef USE_BIG_NUMBER
-        NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
-        data.number = new NUMBER(std::to_string(data.smallNumber));
-#else
-        NUMBER n = NUMBER(other.toString().c_str());
-        data.number = new NUMBER(toString().c_str());
-#endif
-        type = Types::BigNumber;
-        useCount = new USE_COUNT_TYPE; *useCount = 0;
-        *data.number /= n;
+        if (limitExceed) {
+  #ifndef USE_BIG_NUMBER
+          NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
+          data.number = new NUMBER(std::to_string(data.smallNumber));
+  #else
+          NUMBER n = NUMBER(other.toString().c_str());
+          data.number = new NUMBER(toString().c_str());
+  #endif
+          type = Types::BigNumber;
+          useCount = new USE_COUNT_TYPE; *useCount = 0;
+          *data.number /= n;
+        } else {
+          goto divDoubles;
+        }
       } else {
+        divDoubles:
         data.smallNumber /= other.toDouble();
       }
     } else if (_ISBIGNUMBER(type) && _ISNUMBER(other.type)) {
@@ -1808,7 +1855,7 @@ public:
     } else {
       *this = 0;
     }
-    return this;
+    return *this;
   }
 
   Value operator/(const Value& other) const {
@@ -1817,7 +1864,7 @@ public:
     return v;
   }
 
-  Value operator%=(const Value& other) {
+  Value& operator%=(const Value& other) {
     modify_linked()
     if (_ISNUMBER(type) && _ISNUMBER(other.type)) {
 #ifdef USE_DOUBLE
@@ -1848,7 +1895,7 @@ public:
     } else {
       *this = 0;
     }
-    return this;
+    return *this;
   }
 
   Value operator%(const Value& other) const {
@@ -1871,7 +1918,7 @@ public:
     return tmp;
   }
 
-  Value operator++() {
+  Value& operator++() {
     if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number ++;
@@ -1881,7 +1928,7 @@ public:
       *data.number += 1;
 #endif
     }
-    return this;
+    return *this;
   }
 
   Value operator--(int) {
@@ -1898,7 +1945,7 @@ public:
     return tmp;
   }
 
-  Value operator--() {
+  Value& operator--() {
     if (_ISNUMBER(type)) {
 #ifdef USE_DOUBLE
       data.number --;
@@ -1908,7 +1955,11 @@ public:
       *data.number -= 1;
 #endif
     }
-    return this;
+    return *this;
+  }
+
+  inline TEXT& getString() const {
+    return *data.text;
   }
 
   void pow(const Value& other) {
@@ -1917,7 +1968,7 @@ public:
 #ifdef USE_DOUBLE
       data.number = ::pow(data.number, other.data.number);
 #else
-      if (other.data.smallNumber * log10(data.smallNumber) + 1 >= 8) {
+      if (type != Types::SmallNumber && other.data.smallNumber * log10(data.smallNumber) + 1 >= 8) {
 #ifndef USE_BIG_NUMBER
         NUMBER n = NUMBER(std::to_string(other.data.smallNumber));
         data.number = new NUMBER(std::to_string(data.smallNumber));
@@ -1948,12 +1999,51 @@ public:
 
 #ifndef USE_NOSTD_MAP
 inline size_t HashFunction::operator() (const Value& v) const {
+// #ifdef USE_ARDUINO_STRING
+//   return (std::hash<char*>() ((char*) v.toString().c_str())) ^
+// #else
+//   return (std::hash<std::string>() (v.toString())) ^
+// #endif
+//           (std::hash<int>()((int) v.getType()));
+
+  Types t = v.getType();
+  if (_ISTEXT(t)) {
 #ifdef USE_ARDUINO_STRING
-  return (std::hash<char*>() ((char*) v.toString().c_str())) ^
+    return (std::hash<const char*>() (v.getString().c_str())) ^
 #else
-  return (std::hash<std::string>() (v.toString())) ^
+    return (std::hash<std::string>() (v.getString())) ^
 #endif
-          (std::hash<int>()((int) v.getType()));
+            (std::hash<char>()((char) t));
+  } else if (_ISNULL(t) || _ISFALSE(t) || _ISTRUE(t)) {
+    return (std::hash<char>() (0) ^ (std::hash<char>() ((char) t)));
+  } else if (_ISNUMBER(t)) {
+#ifdef USE_DOUBLE
+    return (std::hash<double>() (v.getData().number) ^ (std::hash<char>() ((char) Types::Number)));
+#else
+    return (std::hash<double>() (v.getData().smallNumber) ^ (std::hash<char>() ((char) Types::Number)));
+#endif
+  } else if (_ISARR(t)) {
+    size_t hash = (std::hash<char>() ((char) Types::Array)), s = v.length();
+    while (s > 0) {
+      s--;
+      hash ^= s + this->operator() (v[s]);
+    }
+    return hash;
+  } else if (_ISMAP(t)) {
+    size_t hash = (std::hash<char>() ((char) Types::Map)), s = v.length();
+    while (s > 0) {
+      s--;
+      hash ^= this->operator() (v.getKeyAt(s)) ^ this->operator() (v.getValueAt(s));
+    }
+    return hash;
+  } else {
+#ifdef USE_ARDUINO_STRING
+    return (std::hash<char*>() ((char*) v.toString().c_str())) ^
+#else
+    return (std::hash<std::string>() (v.toString())) ^
+#endif
+            (std::hash<char>()((char) t));
+  }
 }
 #else
 inline Pair& Pair::operator= (const Pair& p) {

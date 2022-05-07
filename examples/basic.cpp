@@ -29,4 +29,11 @@ int main() {
 	c -= " World"; // 20Hello
 	b++;
 	std::cout << (b + c).toString() << std::endl;
+	Value arr = Types::Array;
+	arr.append(10);
+	arr.append("Hello");
+	HashFunction hfn;
+	std::cout << hfn(arr) << std::endl;
+	arr.reverse();
+	std::cout << hfn(arr) << std::endl;
 }
